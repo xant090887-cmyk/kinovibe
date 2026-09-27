@@ -1,0 +1,2444 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KinoVibe — Кинохаб для двоих</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fdf2f8',
+              500: '#ec4899',
+              600: '#db2777',
+              700: '#be185d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      touch-action: pan-y;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .custom-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-nav {
+      background: rgba(10, 15, 30, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 3s infinite ease-in-out;
+    }
+    .swipe-card-transition {
+      transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-28 antialiased selection:bg-rose-500 selection:text-white">
+
+  <header class="sticky top-0 z-30 glass-card px-4 py-3 border-b border-slate-800/80">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 via-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-rose-500/25">
+          <i class="fa-solid fa-clapperboard text-white text-base"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-display font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-rose-300 via-pink-200 to-purple-200 bg-clip-text text-transparent">
+              KinoVibe
+            </h1>
+            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono hidden sm:inline">Web & TG Mini App</span>
+          </div>
+          <p class="text-[10px] text-slate-400 font-medium flex items-center space-x-1">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping mr-0.5"></span>
+            <span>Пара: <strong class="text-slate-300">Он & Она</strong></span>
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button onclick="openTgSettingsModal()" title="Настройки Telegram Бота" class="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 hover:border-sky-500 text-slate-400 hover:text-sky-400 flex items-center justify-center text-xs transition-all">
+          <i class="fa-brands fa-telegram text-sm"></i>
+        </button>
+
+        <div class="flex items-center bg-slate-900/95 rounded-full p-1 border border-slate-800 shadow-inner">
+          <button id="switchUserHim" onclick="setActiveUser('him')" class="flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 bg-indigo-600 text-white shadow-sm">
+            <span>👨</span>
+            <span class="hidden sm:inline">Он</span>
+          </button>
+          <button id="switchUserHer" onclick="setActiveUser('her')" class="flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white">
+            <span>👩</span>
+            <span class="hidden sm:inline">Она</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 pt-4 pb-12">
+
+    <section id="view-wishlist" class="space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-bold font-display text-white flex items-center space-x-2">
+            <span>🍿 Хотим посмотреть</span>
+            <span id="wishlistCountBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-rose-400 border border-rose-500/20">0</span>
+          </h2>
+          <p class="text-xs text-slate-400">Фильмы, сериалы и документалки для совместных вечеров</p>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <button onclick="pickRandomWishlist()" class="px-3 py-2 rounded-xl bg-purple-900/40 border border-purple-500/40 hover:bg-purple-900/60 text-purple-200 text-xs font-semibold active:scale-95 transition-all flex items-center space-x-1.5 shadow-sm">
+            <i class="fa-solid fa-dice text-xs text-purple-400"></i>
+            <span>Рулетка вечера</span>
+          </button>
+          <button onclick="openAddMovieModal('wishlist')" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white text-xs font-bold shadow-lg shadow-rose-500/25 active:scale-95 transition-all flex items-center space-x-1.5">
+            <i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i>
+            <span>Добавить фильм (ИИ)</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-2xl p-3 border border-slate-800 space-y-2.5">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+          <input type="text" id="wishlistSearchInput" oninput="renderWishlist()" placeholder="Поиск по названию, жанру, франшизе..." class="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500/60 transition-all">
+        </div>
+
+        <div class="flex items-center space-x-2 overflow-x-auto custom-scroll pb-1 text-xs">
+          <span class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider flex-shrink-0 mr-1">Фильтры:</span>
+          <button onclick="setFilterDuration('all')" class="duration-filter-btn px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium whitespace-nowrap active:scale-95 transition-all" data-filter="all">Все</button>
+          <button onclick="setFilterDuration('movies')" class="duration-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium whitespace-nowrap active:scale-95 transition-all" data-filter="movies">🎬 Фильмы</button>
+          <button onclick="setFilterDuration('series')" class="duration-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium whitespace-nowrap active:scale-95 transition-all" data-filter="series">📺 Сериалы</button>
+          <button onclick="setFilterDuration('kids')" class="duration-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400 font-medium whitespace-nowrap active:scale-95 transition-all" data-filter="kids">👶 С детьми / BBC</button>
+          <button onclick="setFilterDuration('short')" class="duration-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium whitespace-nowrap active:scale-95 transition-all" data-filter="short">⚡ До 110 мин</button>
+        </div>
+      </div>
+
+      <div id="wishlistContainer" class="space-y-3">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <section id="view-matcher" class="hidden space-y-4">
+      <div class="text-center space-y-1">
+        <span class="inline-block px-3 py-0.5 rounded-full bg-rose-500/10 text-rose-400 text-[11px] font-bold tracking-wider uppercase border border-rose-500/20">
+          Match Night • Двухэтапный выбор
+        </span>
+        <h2 class="text-2xl font-bold font-display text-white">Что смотрим сегодня?</h2>
+        <p class="text-xs text-slate-300 max-w-md mx-auto">
+          Лайкайте карточки, пока не соберется <strong class="text-rose-400">5 взаимных совпадений</strong>. Затем откроется суперфинал для определения победителя!
+        </p>
+      </div>
+
+      <div class="glass-card rounded-2xl p-4 border border-slate-800">
+        <div class="flex items-center justify-between text-xs mb-2">
+          <span class="font-semibold text-slate-200 flex items-center space-x-1.5">
+            <i class="fa-solid fa-fire text-amber-400"></i>
+            <span>Собрано совпадений:</span>
+          </span>
+          <span class="font-mono font-bold text-rose-400" id="matchCounterText">0 / 5</span>
+        </div>
+        <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-800">
+          <div id="matchProgressBar" class="bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        
+        <div id="matchedPoolThumbnails" class="flex items-center space-x-2 mt-3 min-h-[38px] overflow-x-auto custom-scroll">
+          <span class="text-[11px] text-slate-500 italic">Лайкайте карточки, общие совпадения будут собираться здесь...</span>
+        </div>
+      </div>
+
+      <div id="matcherStage1" class="relative max-w-sm mx-auto">
+        <div id="swipeCardStack" class="relative h-[440px] w-full flex items-center justify-center">
+          <!-- Active Card -->
+        </div>
+
+        <div class="flex items-center justify-center space-x-6 mt-4">
+          <button onclick="handleSwipeAction(false)" title="Пропустить" class="w-14 h-14 rounded-full bg-slate-900 border border-rose-500/30 text-rose-400 hover:bg-rose-950/40 hover:scale-110 active:scale-90 transition-all flex items-center justify-center text-xl shadow-lg shadow-rose-950/30">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          
+          <button onclick="handleSwipeAction(true)" title="Хочу посмотреть!" class="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white hover:scale-110 active:scale-90 transition-all flex items-center justify-center text-2xl shadow-xl shadow-emerald-500/30 animate-pulse-subtle">
+            <i class="fa-solid fa-heart"></i>
+          </button>
+        </div>
+        
+        <div class="text-center mt-3">
+          <p class="text-[11px] text-slate-400">
+            Сейчас голосует: <span id="currentSwiperLabel" class="font-bold text-white">👨 Он</span>
+          </p>
+        </div>
+      </div>
+
+      <div id="matcherStage2" class="hidden glass-card rounded-3xl p-6 border border-purple-500/30 space-y-4 text-center">
+        <div class="inline-flex p-3 rounded-2xl bg-purple-500/20 text-purple-300 text-3xl mb-1 shadow-inner">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+        <h3 class="text-2xl font-extrabold font-display text-white">Суперфинал: Топ-5 Совпадений!</h3>
+        <p class="text-xs text-slate-300 max-w-sm mx-auto">
+          Вы оба лайкнули эти 5 тайтлов! Выберите окончательного чемпиона сегодняшнего вечера:
+        </p>
+
+        <div id="finalShowdownContainer" class="space-y-2.5 pt-2">
+          <!-- Populated by JS -->
+        </div>
+
+        <button onclick="resetMatchSession()" class="text-xs text-slate-400 hover:text-slate-200 underline pt-2">
+          Сбросить и начать подбор заново
+        </button>
+      </div>
+    </section>
+
+    <section id="view-watched" class="hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold font-display text-white flex items-center space-x-2">
+            <span>✅ Уже посмотрели</span>
+            <span id="watchedCountBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 border border-emerald-500/20">0</span>
+          </h2>
+          <p class="text-xs text-slate-400">История киносеансов, ваши точные даты просмотров и оценки</p>
+        </div>
+        <button onclick="openAddMovieModal('watched')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 active:scale-95 transition-all flex items-center space-x-1.5">
+          <i class="fa-solid fa-plus text-[11px]"></i>
+          <span>Записать сеанс</span>
+        </button>
+      </div>
+
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+        <input type="text" id="watchedSearchInput" oninput="renderWatched()" placeholder="Поиск в истории просмотров..." class="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 transition-all">
+      </div>
+
+      <div id="watchedContainer" class="space-y-3">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <section id="view-kp" class="hidden space-y-4">
+      <div class="glass-card rounded-2xl p-5 border border-amber-500/30 space-y-3 bg-gradient-to-r from-amber-950/20 via-slate-900 to-slate-950">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold border border-amber-500/30">
+              <i class="fa-solid fa-star"></i>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h2 class="text-base font-extrabold text-white">Топ-250 Кинопоиска</h2>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">Золотой фонд</span>
+              </div>
+              <p class="text-xs text-slate-400">Лучшие фильмы всех времен по оценкам зрителей Кинопоиска</p>
+            </div>
+          </div>
+          
+          <div class="text-xs bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-800 flex items-center space-x-4">
+            <div>
+              <span class="text-slate-400 block text-[10px]">Просмотрено:</span>
+              <span class="font-bold text-emerald-400" id="kpSeenStats">0 / 250</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800"></div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">В вишлисте:</span>
+              <span class="font-bold text-rose-400" id="kpWantStats">0 / 250</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-slate-800/80">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+            <input type="text" id="kpSearchInput" oninput="renderKpList()" placeholder="Поиск по Топ-250 Кинопоиска (название, режиссер, год)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400">
+          </div>
+
+          <div class="flex items-center space-x-2 overflow-x-auto custom-scroll text-xs">
+            <button onclick="setKpFilter('all')" class="kp-filter-btn px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold" data-kp="all">Все фильмы</button>
+            <button onclick="setKpFilter('unseen')" class="kp-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium" data-kp="unseen">Ещё не смотрели</button>
+            <button onclick="setKpFilter('seen')" class="kp-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium" data-kp="seen">Смотрели</button>
+            <button onclick="setKpFilter('want')" class="kp-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium" data-kp="want">Хотим посмотреть</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="kpContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <section id="view-nyt" class="hidden space-y-4">
+      <div class="glass-card rounded-2xl p-5 border border-amber-500/30 space-y-3 bg-gradient-to-r from-amber-950/20 via-slate-900 to-slate-950">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold border border-amber-500/30">
+              <i class="fa-solid fa-award"></i>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h2 class="text-base font-extrabold text-white">The 100 Best TV Shows</h2>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">NYT 21st Century</span>
+              </div>
+              <p class="text-xs text-slate-400">100 лучших сериалов XXI века по версии The New York Times</p>
+            </div>
+          </div>
+          
+          <div class="text-xs bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-800 flex items-center space-x-4">
+            <div>
+              <span class="text-slate-400 block text-[10px]">Просмотрено:</span>
+              <span class="font-bold text-emerald-400" id="nytSeenStats">0 / 100</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800"></div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">В вишлисте:</span>
+              <span class="font-bold text-rose-400" id="nytWantStats">0 / 100</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-slate-800/80">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+            <input type="text" id="nytSearchInput" oninput="renderNytList()" placeholder="Поиск по сериалам NYT (на английском или русском)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400">
+          </div>
+
+          <div class="flex items-center space-x-2 overflow-x-auto custom-scroll text-xs">
+            <button onclick="setNytFilter('all')" class="nyt-filter-btn px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold" data-nyt="all">Все 100</button>
+            <button onclick="setNytFilter('unseen')" class="nyt-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium" data-nyt="unseen">Ещё не смотрели</button>
+            <button onclick="setNytFilter('seen')" class="nyt-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium" data-nyt="seen">Смотрели</button>
+            <button onclick="setNytFilter('want')" class="nyt-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium" data-nyt="want">Хотим посмотреть</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="nytContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <section id="view-solo" class="hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold font-display text-white flex items-center space-x-2">
+            <span>💡 Смотрел(а) без тебя</span>
+            <span id="soloCountBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-purple-400 border border-purple-500/20">0</span>
+          </h2>
+          <p class="text-xs text-slate-400">Личные рекомендации и вердикты партнеру</p>
+        </div>
+        <button onclick="openAddSoloModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 text-white text-xs font-bold shadow-md shadow-purple-500/20 active:scale-95 transition-all flex items-center space-x-1.5">
+          <i class="fa-solid fa-plus text-[11px]"></i>
+          <span>Посоветовать</span>
+        </button>
+      </div>
+
+      <div id="soloContainer" class="space-y-3">
+        <!-- Solo items via JS -->
+      </div>
+    </section>
+
+    <section id="view-import" class="hidden space-y-4">
+      <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg shadow-inner">
+            <i class="fa-solid fa-file-import"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-white">Импорт заметок из iPhone</h2>
+            <p class="text-xs text-slate-400">Вставьте списки из Apple Notes для быстрого пополнения</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Куда отправить фильмы?</label>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center space-x-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <input type="radio" name="importTarget" value="wishlist" checked class="text-rose-500 focus:ring-0">
+              <span class="font-medium text-slate-200">🍿 В «Хотим посмотреть»</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <input type="radio" name="importTarget" value="watched" class="text-rose-500 focus:ring-0">
+              <span class="font-medium text-slate-200">✅ В «Уже посмотрели»</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Текст из заметки:</label>
+          <textarea id="rawNotesInput" rows="5" placeholder="Вставьте список из заметок..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-rose-500/60 font-mono"></textarea>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <button onclick="previewNotesImport()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold active:scale-95 transition-all">
+            Предпросмотр
+          </button>
+          <button onclick="executeNotesImport()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition-all">
+            Импортировать список
+          </button>
+        </div>
+
+        <div id="importPreviewBox" class="hidden mt-3 pt-3 border-t border-slate-800 text-xs space-y-2">
+          <div class="flex items-center justify-between text-slate-400">
+            <span>Распознано тайтлов: <strong class="text-white" id="parsedCount">0</strong></span>
+          </div>
+          <div id="parsedItemsList" class="max-h-36 overflow-y-auto space-y-1 pr-1 font-mono text-[11px] text-slate-300">
+            <!-- Parsed lines -->
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+          <span class="text-[11px] text-slate-500">Управление исходной базой:</span>
+          <button onclick="resetToInitialUserData()" class="text-xs text-rose-400 hover:text-rose-300 underline font-medium">
+            Сбросить к исходному списку из чата
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="fixed bottom-0 left-0 right-0 glass-nav z-40 px-2 py-2">
+    <div class="max-w-xl mx-auto flex items-center justify-around overflow-x-auto custom-scroll">
+      <button onclick="switchTab('wishlist')" class="nav-tab-btn flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-rose-400 active:scale-95 transition-all flex-shrink-0" data-tab="wishlist">
+        <i class="fa-solid fa-film text-base"></i>
+        <span class="text-[10px] font-semibold mt-1">Хотим</span>
+      </button>
+
+      <button onclick="switchTab('matcher')" class="nav-tab-btn flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-400 active:scale-95 transition-all flex-shrink-0" data-tab="matcher">
+        <div class="relative">
+          <i class="fa-solid fa-heart-circle-bolt text-base"></i>
+          <span id="matcherNavIndicator" class="hidden absolute -top-1 -right-2 w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+        </div>
+        <span class="text-[10px] font-semibold mt-1">Матчинг</span>
+      </button>
+
+      <button onclick="switchTab('watched')" class="nav-tab-btn flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-400 active:scale-95 transition-all flex-shrink-0" data-tab="watched">
+        <i class="fa-solid fa-circle-check text-base"></i>
+        <span class="text-[10px] font-semibold mt-1">Смотрели</span>
+      </button>
+
+      <button onclick="switchTab('kp')" class="nav-tab-btn flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-400 active:scale-95 transition-all flex-shrink-0" data-tab="kp">
+        <i class="fa-solid fa-star text-base text-amber-400"></i>
+        <span class="text-[10px] font-semibold mt-1">Топ КП 250</span>
+      </button>
+
+      <button onclick="switchTab('nyt')" class="nav-tab-btn flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-400 active:scale-95 transition-all flex-shrink-0" data-tab="nyt">
+        <i class="fa-solid fa-award text-base text-amber-400"></i>
+        <span class="text-[10px] font-semibold mt-1">Топ NYT</span>
+      </button>
+
+      <button onclick="switchTab('solo')" class="nav-tab-btn flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-400 active:scale-95 transition-all flex-shrink-0" data-tab="solo">
+        <i class="fa-solid fa-user-astronaut text-base"></i>
+        <span class="text-[10px] font-semibold mt-1">Соло</span>
+      </button>
+
+      <button onclick="switchTab('import')" class="nav-tab-btn flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-400 active:scale-95 transition-all flex-shrink-0" data-tab="import">
+        <i class="fa-solid fa-file-import text-base"></i>
+        <span class="text-[10px] font-semibold mt-1">Импорт</span>
+      </button>
+    </div>
+  </nav>
+
+  <div id="editWatchedModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl w-full max-w-lg p-5 border border-emerald-500/40 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 id="editWatchedTitleDisplay" class="text-base font-bold text-white">Редактировать сеанс</h3>
+          <p class="text-[11px] text-slate-400">Укажите дату, место и ваши оценки</p>
+        </div>
+        <button onclick="closeEditWatchedModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="editWatchedForm" onsubmit="handleEditWatchedSubmit(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="editWatchedId">
+
+        <div class="space-y-1.5">
+          <label class="block font-semibold text-slate-300">📅 Когда посмотрели:</label>
+          <div class="flex items-center space-x-2">
+            <input type="text" id="editWatchedDateInput" placeholder="Например: 27 сентября 2026" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500">
+          </div>
+          <div class="flex items-center space-x-1.5 overflow-x-auto custom-scroll pt-1 text-[11px]">
+            <span class="text-[10px] text-slate-500 font-semibold">Быстро:</span>
+            <button type="button" onclick="setQuickDate('Сегодня')" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">Сегодня</button>
+            <button type="button" onclick="setQuickDate('Вчера')" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">Вчера</button>
+            <button type="button" onclick="setQuickDate('На прошлых выходных')" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">На выходных</button>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="block font-semibold text-slate-300">📍 Где посмотрели:</label>
+          <input type="text" id="editWatchedPlaceInput" placeholder="Например: Дома на диване" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500">
+          <div class="flex items-center space-x-1.5 overflow-x-auto custom-scroll pt-1 text-[11px]">
+            <span class="text-[10px] text-slate-500 font-semibold">Быстро:</span>
+            <button type="button" onclick="setQuickPlace('Дома на диване')" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">🛋️ На диване</button>
+            <button type="button" onclick="setQuickPlace('Кинотеатр')" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">🍿 Кинотеатр</button>
+            <button type="button" onclick="setQuickPlace('Дома на проекторе')" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">📽️ Проектор</button>
+            <button type="button" onclick="setQuickPlace('Дома с пиццей')" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">🍕 С пиццей</button>
+            <button type="button" onclick="setQuickPlace('В поездке')" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">✈️ В поездке</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 pt-1">
+          <div class="p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-1.5">
+            <label class="block font-semibold text-indigo-300 text-xs">👨 Оценка Его (1-10)</label>
+            <input type="number" min="1" max="10" step="0.5" id="editWatchedRatingHim" placeholder="Например: 9.0" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-white font-mono text-center text-sm focus:outline-none focus:border-indigo-400 font-bold">
+          </div>
+          <div class="p-3 rounded-2xl bg-rose-950/40 border border-rose-500/30 space-y-1.5">
+            <label class="block font-semibold text-rose-300 text-xs">👩 Оценка Её (1-10)</label>
+            <input type="number" min="1" max="10" step="0.5" id="editWatchedRatingHer" placeholder="Например: 9.5" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-white font-mono text-center text-sm focus:outline-none focus:border-rose-400 font-bold">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Теги и впечатления (через запятую)</label>
+          <input type="text" id="editWatchedTagsInput" placeholder="Шедевр, рыдали в конце, отличный саундтрек" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Личные заметки о сеансе</label>
+          <textarea id="editWatchedNotesInput" rows="2" placeholder="Что запомнилось больше всего..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"></textarea>
+        </div>
+
+        <div class="flex items-center space-x-2 pt-2">
+          <button type="button" onclick="closeEditWatchedModal()" class="w-1/3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-all">
+            Отмена
+          </button>
+          <button type="submit" class="w-2/3 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 active:scale-95 transition-all">
+            Сохранить сеанс
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="movieModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl w-full max-w-lg p-5 border border-slate-700/80 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 id="movieModalTitle" class="text-base font-bold text-white">Добавить фильм</h3>
+          <p class="text-[11px] text-slate-400">Автозаполнение данных через нейросеть</p>
+        </div>
+        <button onclick="closeMovieModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-3 rounded-2xl bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border border-purple-500/30 space-y-2">
+        <label class="block text-xs font-semibold text-purple-300">
+          ✨ Умный поиск (название или ссылка Кинопоиск / IMDb):
+        </label>
+        <div class="flex items-center space-x-2">
+          <input type="text" id="aiAutofillQuery" placeholder="Например: Дюна 2 или ссылка..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400">
+          <button id="aiAutofillBtn" type="button" onclick="triggerAiAutofill()" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex-shrink-0 active:scale-95 transition-all flex items-center space-x-1.5 shadow-md shadow-purple-600/30">
+            <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+            <span>Найти</span>
+          </button>
+        </div>
+        <p id="aiAutofillStatus" class="text-[10px] text-purple-400 hidden flex items-center space-x-1">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <span>ИИ ищет постер, режиссера, рейтинг и хронометраж...</span>
+        </p>
+      </div>
+
+      <form id="movieForm" onsubmit="handleMovieFormSubmit(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="movieFormTarget" value="wishlist">
+        
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Название фильма / сериала *</label>
+          <input type="text" id="movieInputTitle" required placeholder="Например: Дюна: Часть вторая" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Жанр / Категория</label>
+            <input type="text" id="movieInputGenre" placeholder="Фантастика, драма" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Длительность / Сезоны</label>
+            <input type="text" id="movieInputDuration" placeholder="140 мин или 2 сезона" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Год</label>
+            <input type="number" id="movieInputYear" placeholder="2024" value="2024" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Рейтинг (КП/IMDb)</label>
+            <input type="text" id="movieInputRatingScore" placeholder="8.4" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Кто добавил?</label>
+            <select id="movieInputAddedBy" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500">
+              <option value="Он">👨 Он</option>
+              <option value="Она">👩 Она</option>
+              <option value="Вместе">❤️ Вместе</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Ссылка на постер</label>
+          <input type="url" id="movieInputPoster" placeholder="https://..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500">
+        </div>
+
+        <div id="watchedExtraFields" class="hidden space-y-3 pt-2 border-t border-slate-800">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">📅 Когда посмотрели</label>
+              <input type="text" id="movieInputWatchedDate" placeholder="Например: 11 апреля 2025" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-rose-500">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-300 mb-1">📍 Где посмотрели</label>
+              <input type="text" id="movieInputWatchedPlace" placeholder="Дома на диване, кинотеатр" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30">
+              <label class="block font-semibold text-indigo-300 mb-1">👨 Оценка Его (1-10)</label>
+              <input type="number" min="1" max="10" step="0.5" id="movieInputRatingHim" placeholder="8.5" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-mono focus:outline-none focus:border-indigo-400">
+            </div>
+            <div class="p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30">
+              <label class="block font-semibold text-rose-300 mb-1">👩 Оценка Её (1-10)</label>
+              <input type="number" min="1" max="10" step="0.5" id="movieInputRatingHer" placeholder="9.0" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-mono focus:outline-none focus:border-rose-400">
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Впечатления / теги</label>
+            <input type="text" id="movieInputTags" placeholder="Любимое, рыдали в конце, отличный саундтрек" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500 mb-2">
+            <textarea id="movieInputNote" rows="2" placeholder="Заметки о сеансе..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500"></textarea>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold text-xs shadow-lg shadow-rose-500/25 active:scale-95 transition-all">
+            Сохранить в базу
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="soloModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl w-full max-w-md p-5 border border-purple-500/40 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white">Рекомендовать партнеру</h3>
+        <button onclick="closeSoloModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="soloForm" onsubmit="handleSoloFormSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Название фильма *</label>
+          <input type="text" id="soloInputTitle" required placeholder="Что ты посмотрел(а)?" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-purple-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Кто посмотрел?</label>
+            <select id="soloInputWho" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+              <option value="Он">👨 Он</option>
+              <option value="Она">👩 Она</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Вердикт партнеру</label>
+            <select id="soloInputVerdict" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+              <option value="must_watch">🔥 Шедевр — надо вместе!</option>
+              <option value="good_once">👌 Норм, на один раз</option>
+              <option value="skip">⛔ Шляпа полная, не трать время</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Короткий отзыв</label>
+          <textarea id="soloInputComment" rows="2" placeholder="Концовка разнесла, тебе точно понравится!" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-purple-500"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs shadow-lg shadow-purple-500/25 active:scale-95 transition-all">
+          Опубликовать рекомендацию
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="tgSettingsModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl w-full max-w-md p-5 border border-sky-500/40 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2">
+          <i class="fa-brands fa-telegram text-sky-400 text-lg"></i>
+          <h3 class="text-base font-bold text-white">Telegram Бот-ассистент</h3>
+        </div>
+        <button onclick="closeTgSettingsModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-300 space-y-2">
+        <p>
+          Подключите вашего бота, чтобы он писал в совместный чат, когда кто-то добавляет фильм или когда вы оба совпали во вкусах!
+        </p>
+      </div>
+
+      <form id="tgSettingsForm" onsubmit="saveTgSettings(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Bot Token (из @BotFather)</label>
+          <input type="text" id="tgBotTokenInput" placeholder="7123456789:AAH..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 font-mono focus:outline-none focus:border-sky-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Chat ID совместного чата</label>
+          <input type="text" id="tgChatIdInput" placeholder="-100123456789 или ваш user id" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 font-mono focus:outline-none focus:border-sky-500">
+        </div>
+
+        <div class="flex items-center space-x-2 pt-2">
+          <button type="button" onclick="testTgBotMessage()" class="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 font-semibold border border-sky-500/30 active:scale-95 transition-all">
+            Тест отправки
+          </button>
+          <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold shadow-lg shadow-sky-600/30 active:scale-95 transition-all">
+            Сохранить
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- In-App Notification Toast Box -->
+  <div id="toastBox" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 translate-y-[-10px]">
+    <div id="toastContent" class="glass-card px-4 py-2.5 rounded-2xl border border-slate-700 shadow-xl text-xs font-semibold flex items-center space-x-2 text-white">
+      <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+      <span id="toastMessage">Успешно!</span>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'kinovibe_couple_data_v3_full';
+    const TG_SETTINGS_KEY = 'kinovibe_tg_settings_v1';
+
+    const kpTop250Films = [
+      { rank: 1, title: "Зеленая миля", orig: "The Green Mile", year: 1999, kp: 9.1, dir: "Фрэнк Дарабонт" },
+      { rank: 2, title: "Побег из Шоушенка", orig: "The Shawshank Redemption", year: 1994, kp: 9.1, dir: "Фрэнк Дарабонт" },
+      { rank: 3, title: "1+1", orig: "Intouchables", year: 2011, kp: 8.8, dir: "Оливье Накаш" },
+      { rank: 4, title: "Интерстеллар", orig: "Interstellar", year: 2014, kp: 8.7, dir: "Кристофер Нолан" },
+      { rank: 5, title: "Властелин колец: Возвращение короля", orig: "The Lord of the Rings: The Return of the King", year: 2003, kp: 8.7, dir: "Питер Джексон" },
+      { rank: 6, title: "Форрест Гамп", orig: "Forrest Gump", year: 1994, kp: 8.9, dir: "Роберт Земекис" },
+      { rank: 7, title: "Список Шиндлера", orig: "Schindler's List", year: 1993, kp: 8.8, dir: "Стивен Спилберг" },
+      { rank: 8, title: "Король Лев", orig: "The Lion King", year: 1994, kp: 8.8, dir: "Роджер Аллерс" },
+      { rank: 9, title: "Тайна Коко", orig: "Coco", year: 2017, kp: 8.7, dir: "Ли Анкрич" },
+      { rank: 10, title: "Леон", orig: "Léon", year: 1994, kp: 8.7, dir: "Люк Бессон" },
+      { rank: 11, title: "Бойцовский клуб", orig: "Fight Club", year: 1999, kp: 8.7, dir: "Дэвид Финчер" },
+      { rank: 12, title: "Иван Васильевич меняет профессию", orig: "Иван Васильевич...", year: 1973, kp: 8.8, dir: "Леонид Гайдай" },
+      { rank: 13, title: "Жизнь прекрасна", orig: "La vita è bella", year: 1997, kp: 8.6, dir: "Роберто Бениньи" },
+      { rank: 14, title: "Достучаться до небес", orig: "Knockin' on Heaven's Door", year: 1997, kp: 8.6, dir: "Томас Ян" },
+      { rank: 15, title: "Криминальное чтиво", orig: "Pulp Fiction", year: 1994, kp: 8.6, dir: "Квентин Тарантино" },
+      { rank: 16, title: "Операция «Ы» и другие приключения Шурика", orig: "Операция «Ы»...", year: 1965, kp: 8.7, dir: "Леонид Гайдай" },
+      { rank: 17, title: "Престиж", orig: "The Prestige", year: 2006, kp: 8.6, dir: "Кристофер Нолан" },
+      { rank: 18, title: "Гладиатор", orig: "Gladiator", year: 2000, kp: 8.6, dir: "Ридли Скотт" },
+      { rank: 19, title: "Бриллиантовая рука", orig: "Бриллиантовая рука", year: 1968, kp: 8.5, dir: "Леонид Гайдай" },
+      { rank: 20, title: "Начало", orig: "Inception", year: 2010, kp: 8.8, dir: "Кристофер Нолан" },
+      { rank: 21, title: "Темный рыцарь", orig: "The Dark Knight", year: 2008, kp: 8.5, dir: "Кристофер Нолан" },
+      { rank: 22, title: "Отступники", orig: "The Departed", year: 2006, kp: 8.5, dir: "Мартин Скорсезе" },
+      { rank: 23, title: "Властелин колец: Братство кольца", orig: "The Lord of the Rings", year: 2001, kp: 8.6, dir: "Питер Джексон" },
+      { rank: 24, title: "Властелин колец: Две крепости", orig: "The Two Towers", year: 2002, kp: 8.6, dir: "Питер Джексон" },
+      { rank: 25, title: "Пианист", orig: "The Pianist", year: 2002, kp: 8.5, dir: "Роман Полански" },
+      { rank: 26, title: "В бой идут одни «старики»", orig: "В бой идут одни «старики»", year: 1973, kp: 8.7, dir: "Леонид Быков" },
+      { rank: 27, title: "Остров проклятых", orig: "Shutter Island", year: 2010, kp: 8.5, dir: "Мартин Скорсезе" },
+      { rank: 28, title: "Карты, деньги, два ствола", orig: "Lock, Stock and Two Smoking Barrels", year: 1998, kp: 8.6, dir: "Гай Ричи" },
+      { rank: 29, title: "Джентльмены", orig: "The Gentlemen", year: 2019, kp: 8.6, dir: "Гай Ричи" },
+      { rank: 30, title: "ВАЛЛ-И", orig: "WALL·E", year: 2008, kp: 8.4, dir: "Эндрю Стэнтон" },
+      { rank: 31, title: "Крёстный отец", orig: "The Godfather", year: 1972, kp: 8.7, dir: "Фрэнсис Форд Коппола" },
+      { rank: 32, title: "Титаник", orig: "Titanic", year: 1997, kp: 8.4, dir: "Джеймс Кэмерон" },
+      { rank: 33, title: "Матрица", orig: "The Matrix", year: 1999, kp: 8.5, dir: "Вачовски" },
+      { rank: 34, title: "Хороший, плохой, злой", orig: "Il buono, il brutto, il cattivo", year: 1966, kp: 8.5, dir: "Серджио Леоне" },
+      { rank: 35, title: "Служебный роман", orig: "Служебный роман", year: 1977, kp: 8.4, dir: "Эльдар Рязанов" },
+      { rank: 36, title: "Джентльмены удачи", orig: "Джентльмены удачи", year: 1971, kp: 8.5, dir: "Александр Серый" },
+      { rank: 37, title: "Шоу Трумана", orig: "The Truman Show", year: 1998, kp: 8.4, dir: "Питер Уир" },
+      { rank: 38, title: "Хатико: Самый верный друг", orig: "Hachi: A Dog's Tale", year: 2008, kp: 8.4, dir: "Лассе Халльстрём" },
+      { rank: 39, title: "Игры разума", orig: "A Beautiful Mind", year: 2001, kp: 8.5, dir: "Рон Ховард" },
+      { rank: 40, title: "Москва слезам не верит", orig: "Москва слезам не верит", year: 1979, kp: 8.5, dir: "Владимир Меньшов" },
+      { rank: 41, title: "Джанго освобожденный", orig: "Django Unchained", year: 2012, kp: 8.3, dir: "Квентин Тарантино" },
+      { rank: 42, title: "Запах женщины", orig: "Scent of a Woman", year: 1992, kp: 8.4, dir: "Мартин Брест" },
+      { rank: 43, title: "Унесённые призраками", orig: "Sen to Chihiro no kamikakushi", year: 2001, kp: 8.5, dir: "Хаяо Миядзаки" },
+      { rank: 44, title: "Ходячий замок", orig: "Howl's Moving Castle", year: 2004, kp: 8.4, dir: "Хаяо Миядзаки" },
+      { rank: 45, title: "Омерзительная восьмерка", orig: "The Hateful Eight", year: 2015, kp: 8.0, dir: "Квентин Тарантино" },
+      { rank: 46, title: "Брат", orig: "Брат", year: 1997, kp: 8.3, dir: "Алексей Балабанов" },
+      { rank: 47, title: "Брат 2", orig: "Брат 2", year: 2000, kp: 8.2, dir: "Алексей Балабанов" },
+      { rank: 48, title: "Собачье сердце", orig: "Собачье сердце", year: 1988, kp: 8.4, dir: "Владимир Бортко" },
+      { rank: 49, title: "Аватар", orig: "Avatar", year: 2009, kp: 8.0, dir: "Джеймс Кэмерон" },
+      { rank: 50, title: "Зелёная книга", orig: "Green Book", year: 2018, kp: 8.4, dir: "Питер Фаррелли" },
+      { rank: 51, title: "Оппенгеймер", orig: "Oppenheimer", year: 2023, kp: 8.2, dir: "Кристофер Нолан" },
+      { rank: 52, title: "Дюна: Часть вторая", orig: "Dune: Part Two", year: 2024, kp: 8.4, dir: "Дени Вильнёв" },
+      { rank: 53, title: "Храброе сердце", orig: "Braveheart", year: 1995, kp: 8.3, dir: "Мэл Гибсон" },
+      { rank: 54, title: "Поймай меня, если сможешь", orig: "Catch Me If You Can", year: 2002, kp: 8.5, dir: "Стивен Спилберг" },
+      { rank: 55, title: "Большой куш", orig: "Snatch", year: 2000, kp: 8.5, dir: "Гай Ричи" },
+      { rank: 56, title: "Остров сокровищ", orig: "Остров сокровищ", year: 1988, kp: 8.3, dir: "Давид Черкасский" },
+      { rank: 57, title: "Семь", orig: "Se7en", year: 1995, kp: 8.3, dir: "Дэвид Финчер" },
+      { rank: 58, title: "В погоне за счастьем", orig: "The Pursuit of Happyness", year: 2006, kp: 8.3, dir: "Габриэле Муччино" },
+      { rank: 59, title: "Гонка", orig: "Rush", year: 2013, kp: 8.1, dir: "Рон Ховард" },
+      { rank: 60, title: "Эдди «Орел»", orig: "Eddie the Eagle", year: 2016, kp: 7.7, dir: "Декстер Флетчер" },
+      { rank: 61, title: "Нокдаун", orig: "Cinderella Man", year: 2005, kp: 8.2, dir: "Рон Ховард" },
+      { rank: 62, title: "Марсианин", orig: "The Martian", year: 2015, kp: 7.8, dir: "Ридли Скотт" },
+      { rank: 63, title: "Авиатор", orig: "The Aviator", year: 2004, kp: 7.6, dir: "Мартин Скорсезе" },
+      { rank: 64, title: "Невидимая сторона", orig: "The Blind Side", year: 2009, kp: 8.2, dir: "Джон Ли Хэнкок" },
+      { rank: 65, title: "Счастливое число Слевина", orig: "Lucky Number Slevin", year: 2006, kp: 8.1, dir: "Пол Макгиган" },
+      { rank: 66, title: "Спасти рядового Райана", orig: "Saving Private Ryan", year: 1998, kp: 8.2, dir: "Стивен Спилберг" },
+      { rank: 67, title: "Троя", orig: "Troy", year: 2004, kp: 8.0, dir: "Вольфганг Петерсен" },
+      { rank: 68, title: "Человек дождя", orig: "Rain Man", year: 1988, kp: 8.3, dir: "Барри Левинсон" },
+      { rank: 69, title: "Прислуга", orig: "The Help", year: 2011, kp: 8.2, dir: "Тейт Тейлор" },
+      { rank: 70, title: "Невероятная жизнь Уолтера Митти", orig: "The Secret Life of Walter Mitty", year: 2013, kp: 7.9, dir: "Бен Стиллер" }
+    ];
+
+    const nytTop100Shows = [
+      { rank: 1, title: "Breaking Bad", ru: "Во все тяжкие", years: "2008–2013" },
+      { rank: 2, title: "The Wire", ru: "Прослушка", years: "2002–2008" },
+      { rank: 3, title: "Mad Men", ru: "Безумцы", years: "2007–2015" },
+      { rank: 4, title: "Succession", ru: "Наследники", years: "2018–2023" },
+      { rank: 5, title: "Fleabag", ru: "Дрянь", years: "2016–2019" },
+      { rank: 6, title: "Game of Thrones", ru: "Игра престолов", years: "2011–2019" },
+      { rank: 7, title: "Veep", ru: "Вице-президент", years: "2012–2019" },
+      { rank: 8, title: "30 Rock", ru: "Студия 30", years: "2006–2013" },
+      { rank: 9, title: "Curb Your Enthusiasm", ru: "Умерь свой энтузиазм", years: "2000–2024" },
+      { rank: 10, title: "Atlanta", ru: "Атланта", years: "2016–2022" },
+      { rank: 11, title: "The Office (U.S.)", ru: "Офис (США)", years: "2005–2013" },
+      { rank: 12, title: "Arrested Development", ru: "Замедленное развитие", years: "2003–2019" },
+      { rank: 13, title: "Girls", ru: "Девочки", years: "2012–2017" },
+      { rank: 14, title: "Friday Night Lights", ru: "Огни ночной пятницы", years: "2006–2011" },
+      { rank: 15, title: "Six Feet Under", ru: "Клиент всегда мёртв", years: "2001–2005" },
+      { rank: 16, title: "The Office (U.K.)", ru: "Офис (Великобритания)", years: "2001–2003" },
+      { rank: 17, title: "The Americans", ru: "Американцы", years: "2013–2018" },
+      { rank: 18, title: "I May Destroy You", ru: "Я могу тебя уничтожить", years: "2020" },
+      { rank: 19, title: "Chernobyl", ru: "Чернобыль", years: "2019" },
+      { rank: 20, title: "The Crown", ru: "Корона", years: "2016–2023" },
+      { rank: 21, title: "The White Lotus", ru: "Белый лотос", years: "2021–н.в." },
+      { rank: 22, title: "Lost", ru: "Остаться в живых", years: "2004–2010" },
+      { rank: 23, title: "The Comeback", ru: "Возвращение", years: "2005–2026" },
+      { rank: 24, title: "Deadwood", ru: "Дэдвуд", years: "2004–2006" },
+      { rank: 25, title: "The Leftovers", ru: "Оставленные", years: "2014–2017" },
+      { rank: 26, title: "Black Mirror", ru: "Чёрное зеркало", years: "2011–н.в." },
+      { rank: 27, title: "Better Call Saul", ru: "Лучше звоните Солу", years: "2015–2022" },
+      { rank: 28, title: "Band of Brothers", ru: "Братья по оружию", years: "2001" },
+      { rank: 29, title: "Key & Peele", ru: "Ки и Пил", years: "2012–2015" },
+      { rank: 30, title: "Severance", ru: "Разделение", years: "2022–н.в." },
+      { rank: 31, title: "Survivor", ru: "Последний герой (США)", years: "2000–н.в." },
+      { rank: 32, title: "Andor", ru: "Андор", years: "2022–2025" },
+      { rank: 33, title: "Enlightened", ru: "Просветлённая", years: "2011–2013" },
+      { rank: 34, title: "Schitt's Creek", ru: "Шиттс Крик", years: "2015–2020" },
+      { rank: 35, title: "True Detective (Season 1)", ru: "Настоящий детектив (1 сезон)", years: "2014" },
+      { rank: 36, title: "The Pitt", ru: "Больница (The Pitt)", years: "2025–н.в." },
+      { rank: 37, title: "Battlestar Galactica", ru: "Звёздный крейсер Галактика", years: "2005–2009" },
+      { rank: 38, title: "Homeland", ru: "Родина", years: "2011–2020" },
+      { rank: 39, title: "Watchmen", ru: "Хранители", years: "2019" },
+      { rank: 40, title: "Adolescence", ru: "Взросление", years: "2025" },
+      { rank: 41, title: "Louie", ru: "Луи", years: "2010–2015" },
+      { rank: 42, title: "Hacks", ru: "Хитрости", years: "2021–2026" },
+      { rank: 43, title: "Peaky Blinders", ru: "Острые козырьки", years: "2013–2022" },
+      { rank: 44, title: "BoJack Horseman", ru: "Конь БоДжек", years: "2014–2020" },
+      { rank: 45, title: "Happy Valley", ru: "Счастливая долина", years: "2014–2023" },
+      { rank: 46, title: "Broad City", ru: "Брод Сити", years: "2014–2019" },
+      { rank: 47, title: "Twin Peaks: The Return", ru: "Твин Пикс: Возвращение", years: "2017" },
+      { rank: 48, title: "House of Cards", ru: "Карточный домик", years: "2013–2018" },
+      { rank: 49, title: "Normal People", ru: "Нормальные люди", years: "2020" },
+      { rank: 50, title: "Parks and Recreation", ru: "Парки и зоны отдыха", years: "2009–2015" },
+      { rank: 51, title: "The Good Place", ru: "В лучшем мире", years: "2016–2020" },
+      { rank: 52, title: "Downton Abbey", ru: "Аббатство Даунтон", years: "2010–2015" },
+      { rank: 53, title: "Stranger Things", ru: "Очень странные дела", years: "2016–2025" },
+      { rank: 54, title: "The Bureau", ru: "Бюро легенд", years: "2015–2020" },
+      { rank: 55, title: "Insecure", ru: "Белая ворона", years: "2016–2021" },
+      { rank: 56, title: "Nathan for You", ru: "Нейтан спешит на выручку", years: "2013–2017" },
+      { rank: 57, title: "I Think You Should Leave", ru: "Думаю, вам стоит уйти", years: "2019–н.в." },
+      { rank: 58, title: "Chappelle's Show", ru: "Шоу Шаппелла", years: "2003–2006" },
+      { rank: 59, title: "PEN15", ru: "ПЕН15", years: "2019–2021" },
+      { rank: 60, title: "Peep Show", ru: "Пип шоу", years: "2003–2015" },
+      { rank: 61, title: "RuPaul's Drag Race", ru: "Королевские гонки РуПола", years: "2009–н.в." },
+      { rank: 62, title: "Slow Horses", ru: "Медленные лошади", years: "2022–н.в." },
+      { rank: 63, title: "The Thick of It", ru: "Гуща событий", years: "2005–2012" },
+      { rank: 64, title: "Anthony Bourdain: Parts Unknown", ru: "Энтони Бурден: Неизведанные края", years: "2013–2018" },
+      { rank: 65, title: "Mare of Easttown", ru: "Мейр из Исттауна", years: "2021" },
+      { rank: 66, title: "The Rehearsal", ru: "Репетиция", years: "2022–н.в." },
+      { rank: 67, title: "The Handmaid's Tale", ru: "Рассказ служанки", years: "2017–2025" },
+      { rank: 68, title: "Ozark", ru: "Озарк", years: "2017–2022" },
+      { rank: 69, title: "Anthony Bourdain: No Reservations", ru: "Энтони Бурден: Без предварительных заказов", years: "2005–2012" },
+      { rank: 70, title: "The Shield", ru: "Щит", years: "2002–2008" },
+      { rank: 71, title: "Beef (Season 1)", ru: "Грызня (1 сезон)", years: "2023" },
+      { rank: 72, title: "Squid Game", ru: "Игра в кальмара", years: "2021–2025" },
+      { rank: 73, title: "Barry", ru: "Барри", years: "2018–2023" },
+      { rank: 74, title: "The Bear", ru: "Медведь", years: "2022–2026" },
+      { rank: 75, title: "Ted Lasso", ru: "Тед Лассо", years: "2020–н.в." },
+      { rank: 76, title: "Somebody Somewhere", ru: "Кто-то где-то", years: "2022–2024" },
+      { rank: 77, title: "Modern Family", ru: "Американская семейка", years: "2009–2020" },
+      { rank: 78, title: "It's Always Sunny in Philadelphia", ru: "В Филадельфии всегда солнечно", years: "2005–н.в." },
+      { rank: 79, title: "The Good Wife", ru: "Хорошая жена", years: "2009–2016" },
+      { rank: 80, title: "How To With John Wilson", ru: "Полезные советы от Джона Уилсона", years: "2020–2023" },
+      { rank: 81, title: "The Queen's Gambit", ru: "Ход королевы", years: "2020" },
+      { rank: 82, title: "Better Things", ru: "Всё к лучшему", years: "2016–2022" },
+      { rank: 83, title: "Justified", ru: "Правосудие", years: "2010–2015" },
+      { rank: 84, title: "Planet Earth", ru: "Планета Земля", years: "2006" },
+      { rank: 85, title: "The Great British Baking Show", ru: "Великий британский пекарь", years: "2010–н.в." },
+      { rank: 86, title: "Shogun", ru: "Сёгун", years: "2024–н.в." },
+      { rank: 87, title: "Reservation Dogs", ru: "Псы резервации", years: "2021–2023" },
+      { rank: 88, title: "Dexter", ru: "Декстер", years: "2006–2013" },
+      { rank: 89, title: "Baby Reindeer", ru: "Оленёнок", years: "2024" },
+      { rank: 90, title: "Eastbound & Down", ru: "На дне", years: "2009–2013" },
+      { rank: 91, title: "Catastrophe", ru: "Катастрофа", years: "2015–2019" },
+      { rank: 92, title: "The Night Of", ru: "Однажды ночью", years: "2016" },
+      { rank: 93, title: "Station Eleven", ru: "Станция Одиннадцать", years: "2021–2022" },
+      { rank: 94, title: "The Diplomat", ru: "Дипломатка", years: "2023–н.в." },
+      { rank: 95, title: "House", ru: "Доктор Хаус", years: "2004–2012" },
+      { rank: 96, title: "Halt and Catch Fire", ru: "Остановись и гори", years: "2014–2017" },
+      { rank: 97, title: "Community", ru: "Сообщество", years: "2009–2015" },
+      { rank: 98, title: "The OA", ru: "ОА", years: "2016–2019" },
+      { rank: 99, title: "Gilmore Girls", ru: "Девочки Гилмор", years: "2000–2007" },
+      { rank: 100, title: "Scandal", ru: "Скандал", years: "2012–2018" }
+    ];
+
+    const initialUserData = {
+      activeUser: 'him',
+      filterDuration: 'all',
+      nytFilter: 'all',
+      kpFilter: 'all',
+      nytChecklist: {
+        seen: { 6: true, 43: true, 84: true },
+        want: { 75: true, 53: true, 86: true }
+      },
+      kpChecklist: {
+        seen: { 4: true, 5: true, 17: true, 18: true, 20: true, 21: true, 22: true, 32: true, 37: true, 50: true, 51: true, 53: true, 54: true, 58: true, 59: true, 60: true, 61: true, 62: true, 63: true, 64: true, 65: true, 66: true, 67: true },
+        want: { 1: true, 2: true, 3: true, 7: true, 10: true, 11: true, 14: true, 31: true, 33: true, 49: true, 52: true, 68: true, 69: true, 70: true }
+      },
+      wishlist: [
+        // --- Фильмы ---
+        { id: 'w_hp', title: 'Гарри Поттер (Франшиза)', year: 2001, genre: 'Фэнтези, Приключения', duration: 'Все части', isSeries: false, durationMins: 152, poster: 'https://images.unsplash.com/photo-1547700055-b61cacebece9?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.2', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_pirates', title: 'Пираты Карибского моря', year: 2003, genre: 'Приключения, Комедия', duration: '143 мин', isSeries: false, durationMins: 143, poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80', addedBy: 'Он', ratingScore: '8.4', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_sw', title: 'Звездные войны (Сага)', year: 1977, genre: 'Фантастика, Космоопера', duration: '130 мин', isSeries: false, durationMins: 130, poster: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=600&q=80', addedBy: 'Он', ratingScore: '8.1', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_matrix', title: 'Матрица', year: 1999, genre: 'Киберпанк, Фантастика', duration: '136 мин', isSeries: false, durationMins: 136, poster: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.5', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_indiana', title: 'Индиана Джонс', year: 1981, genre: 'Приключения', duration: '115 мин', isSeries: false, durationMins: 115, poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.0', likes: { him: false, her: false }, category: 'movies' },
+        { id: 'w_diehard', title: 'Крепкий орешек (3, 4 части)', year: 1995, genre: 'Боевик, Триллер', duration: '128 мин', isSeries: false, durationMins: 128, poster: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?w=600&q=80', addedBy: 'Он', ratingScore: '7.8', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_brokeback', title: 'Горбатая гора', year: 2005, genre: 'Драма, Мелодрама', duration: '134 мин', isSeries: false, durationMins: 134, poster: 'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=80', addedBy: 'Она', ratingScore: '7.7', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_dune', title: 'Дюна', year: 2021, genre: 'Фантастика, Эпос', duration: '155 мин', isSeries: false, durationMins: 155, poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.0', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_men', title: 'О чём говорят мужчины (Новые части)', year: 2018, genre: 'Комедия', duration: '99 мин', isSeries: false, durationMins: 99, poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=80', addedBy: 'Она', ratingScore: '7.3', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_bond', title: 'Джеймс Бонд (Спектр / Казино Рояль)', year: 2006, genre: 'Шпионский боевик', duration: '144 мин', isSeries: false, durationMins: 144, poster: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600&q=80', addedBy: 'Он', ratingScore: '7.9', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_pearl', title: 'Перл Харбор', year: 2001, genre: 'Военная драма, Романтика', duration: '183 мин', isSeries: false, durationMins: 183, poster: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=600&q=80', addedBy: 'Она', ratingScore: '7.9', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_joker', title: 'Джокер', year: 2019, genre: 'Психологическая драма, Триллер', duration: '122 мин', isSeries: false, durationMins: 122, poster: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80', addedBy: 'Он', ratingScore: '8.4', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_button', title: 'Загадочная история Бенджамина Баттона', year: 2008, genre: 'Драма, Фэнтези', duration: '166 мин', isSeries: false, durationMins: 166, poster: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=80', addedBy: 'Она', ratingScore: '8.1', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_lincoln', title: 'Линкольн для адвоката', year: 2011, genre: 'Юридический триллер', duration: '118 мин', isSeries: false, durationMins: 118, poster: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=80', addedBy: 'Он', ratingScore: '7.7', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_godfather', title: 'Крёстный отец + сериал «Предложение»', year: 1972, genre: 'Криминальная драма', duration: '175 мин + сериал', isSeries: true, durationMins: 175, poster: 'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.7', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_wick', title: 'Джон Уик', year: 2014, genre: 'Экшен, Боевик', duration: '101 мин', isSeries: false, durationMins: 101, poster: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?w=600&q=80', addedBy: 'Он', ratingScore: '7.4', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_heat', title: 'Схватка (Heat)', year: 1995, genre: 'Криминальный боевик, Триллер', duration: '170 мин', isSeries: false, durationMins: 170, poster: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=80', addedBy: 'Он', ratingScore: '8.3', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_sunday', title: 'Каждое воскресенье', year: 1999, genre: 'Спорт, Драма (Аль Пачино)', duration: '162 мин', isSeries: false, durationMins: 162, poster: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=600&q=80', addedBy: 'Он', ratingScore: '7.6', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_gatsby', title: 'Великий Гэтсби', year: 2013, genre: 'Драма, Мелодрама', duration: '143 мин', isSeries: false, durationMins: 143, poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=80', addedBy: 'Она', ratingScore: '7.9', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_wahlberg', title: 'Лёгкий фильм с Марком Уолбергом (Семья по-быстрому)', year: 2018, genre: 'Семейная комедия', duration: '118 мин', isSeries: false, durationMins: 118, poster: 'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=80', addedBy: 'Вместе', ratingScore: '7.6', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_vanhelsing', title: 'Ван Хельсинг', year: 2004, genre: 'Темное фэнтези, Боевик', duration: '131 мин', isSeries: false, durationMins: 131, poster: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80', addedBy: 'Он', ratingScore: '7.6', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_warrior', title: 'Воин', year: 2011, genre: 'Спорт, Семейная драма', duration: '140 мин', isSeries: false, durationMins: 140, poster: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=600&q=80', addedBy: 'Он', ratingScore: '8.2', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_apes_new', title: 'Планета обезьян (Новое царство)', year: 2024, genre: 'Фантастика, Приключения', duration: '145 мин', isSeries: false, durationMins: 145, poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80', addedBy: 'Он', ratingScore: '7.1', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_ripley', title: 'Талантливый мистер Рипли', year: 1999, genre: 'Психологический триллер', duration: '139 мин', isSeries: false, durationMins: 139, poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80', addedBy: 'Она', ratingScore: '7.8', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_ghostb', title: 'Охотники за привидениями: Леденящий ужас', year: 2024, genre: 'Фантастика, Комедия', duration: '115 мин', isSeries: false, durationMins: 115, poster: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80', addedBy: 'Вместе', ratingScore: '6.7', likes: { him: false, her: false }, category: 'movies' },
+        { id: 'w_sully', title: 'Чудо на Гудзоне', year: 2016, genre: 'Драма, Биография (Том Хэнкс)', duration: '96 мин', isSeries: false, durationMins: 96, poster: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600&q=80', addedBy: 'Вместе', ratingScore: '7.4', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_carter', title: 'Тренер Картер', year: 2005, genre: 'Спортивная драма, Басни', duration: '136 мин', isSeries: false, durationMins: 136, poster: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=600&q=80', addedBy: 'Он', ratingScore: '8.0', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_12years', title: '12 лет рабства', year: 2013, genre: 'Историческая драма', duration: '134 мин', isSeries: false, durationMins: 134, poster: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=80', addedBy: 'Она', ratingScore: '7.8', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_carrey', title: 'Фильмы с Джимом Кэрри (Лжец, лжец / Маска)', year: 1997, genre: 'Культовая комедия', duration: '86 мин', isSeries: false, durationMins: 86, poster: 'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=80', addedBy: 'Вместе', ratingScore: '7.8', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_cityangels', title: 'Город ангелов (Мэг Райан и Николас Кейдж)', year: 1998, genre: 'Романтическое фэнтези, Мелодрама', duration: '114 мин', isSeries: false, durationMins: 114, poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80', addedBy: 'Она', ratingScore: '7.9', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_rainman', title: 'Человек дождя', year: 1988, genre: 'Драма (Хоффман, Круз)', duration: '133 мин', isSeries: false, durationMins: 133, poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.3', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_conjuring', title: 'Заклятие 4 (Последние обряды)', year: 2025, genre: 'Ужасы, Мистика', duration: '112 мин', isSeries: false, durationMins: 112, poster: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80', addedBy: 'Вместе', ratingScore: '7.0', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_dontlook', title: 'Не смотри наверх', year: 2021, genre: 'Сатира, Комедия, Драма', duration: '138 мин', isSeries: false, durationMins: 138, poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80', addedBy: 'Вместе', ratingScore: '7.6', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_fountain', title: 'Источник вечной молодости (The Fountain of Youth)', year: 2025, genre: 'Приключения, Мистика', duration: '120 мин', isSeries: false, durationMins: 120, poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80', addedBy: 'Он', ratingScore: '7.2', likes: { him: false, her: false }, category: 'movies' },
+        { id: 'w_ghost', title: 'Привидение (Ghost)', year: 1990, genre: 'Мелодрама, Фэнтези', duration: '127 мин', isSeries: false, durationMins: 127, poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=80', addedBy: 'Она', ratingScore: '8.2', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_help', title: 'Прислуга (The Help)', year: 2011, genre: 'Драма', duration: '146 мин', isSeries: false, durationMins: 146, poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80', addedBy: 'Она', ratingScore: '8.2', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_librarian', title: 'Библиотекарь (Франшиза)', year: 2004, genre: 'Приключения, Фэнтези', duration: '92 мин', isSeries: false, durationMins: 92, poster: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80', addedBy: 'Он', ratingScore: '6.9', likes: { him: false, her: false }, category: 'movies' },
+        { id: 'w_joeblack', title: 'Знакомьтесь, Джо Блэк', year: 1998, genre: 'Фэнтези, Мелодрама (Брэд Питт)', duration: '178 мин', isSeries: false, durationMins: 178, poster: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=80', addedBy: 'Она', ratingScore: '8.1', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_battle', title: 'Битва за битвой', year: 2023, genre: 'Военный экшен', duration: '115 мин', isSeries: false, durationMins: 115, poster: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?w=600&q=80', addedBy: 'Он', ratingScore: '7.1', likes: { him: false, her: false }, category: 'movies' },
+        { id: 'w_passengers_anne', title: 'Пассажиры с Энн Хэтэуэй', year: 2008, genre: 'Детектив, Триллер, Драма', duration: '93 мин', isSeries: false, durationMins: 93, poster: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=80', addedBy: 'Она', ratingScore: '6.7', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_trap', title: 'Ловушка (Trap)', year: 2024, genre: 'Триллер (М. Найт Шьямалан)', duration: '105 мин', isSeries: false, durationMins: 105, poster: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80', addedBy: 'Он', ratingScore: '6.4', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_heir', title: 'Наследник (The Heir / Триллер)', year: 2023, genre: 'Детектив, Криминал', duration: '110 мин', isSeries: false, durationMins: 110, poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80', addedBy: 'Вместе', ratingScore: '7.0', likes: { him: false, her: false }, category: 'movies' },
+        { id: 'w_waltermitty', title: 'Невероятная жизнь Уолтера Митти', year: 2013, genre: 'Приключения, Комедия, Драма', duration: '114 мин', isSeries: false, durationMins: 114, poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80', addedBy: 'Вместе', ratingScore: '7.9', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_rememberme', title: 'Помни меня (Remember Me)', year: 2010, genre: 'Мелодрама (Роберт Паттинсон)', duration: '113 мин', isSeries: false, durationMins: 113, poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=80', addedBy: 'Она', ratingScore: '7.6', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_transformers', title: 'Трансформеры (Франшиза)', year: 2007, genre: 'Фантастика, Экшен', duration: '144 мин', isSeries: false, durationMins: 144, poster: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?w=600&q=80', addedBy: 'Он', ratingScore: '7.6', likes: { him: true, her: false }, category: 'movies' },
+        { id: 'w_joy', title: 'Джой (Дженнифер Лоуренс)', year: 2015, genre: 'Драма, Биография', duration: '124 мин', isSeries: false, durationMins: 124, poster: 'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=80', addedBy: 'Она', ratingScore: '7.2', likes: { him: false, her: true }, category: 'movies' },
+        { id: 'w_lakehouse', title: 'Дом у озера (Киану Ривз, Сандра Буллок)', year: 2006, genre: 'Романтическая фантастика, Мелодрама', duration: '99 мин', isSeries: false, durationMins: 99, poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80', addedBy: 'Она', ratingScore: '7.8', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_hunger', title: 'Голодные игры (Франшиза)', year: 2012, genre: 'Антиутопия, Приключения', duration: '142 мин', isSeries: false, durationMins: 142, poster: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80', addedBy: 'Она', ratingScore: '7.3', likes: { him: true, her: true }, category: 'movies' },
+        { id: 'w_dunkirk', title: 'Дюнкерк', year: 2017, genre: 'Военная драма (Кристофер Нолан)', duration: '106 мин', isSeries: false, durationMins: 106, poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80', addedBy: 'Он', ratingScore: '7.3', likes: { him: true, her: false }, category: 'movies' },
+
+        // --- С ДЕТЬМИ / Документальное ---
+        { id: 'w_bbc_ocean', title: '«Рождение океана» от ВВС', year: 2020, genre: 'Документальный, Природа', duration: '50 мин', isSeries: false, durationMins: 50, poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.8', likes: { him: true, her: true }, category: 'kids' },
+        { id: 'w_microcosmos', title: '«Микрокосмос»', year: 1996, genre: 'Документальный, Насекомые', duration: '80 мин', isSeries: false, durationMins: 80, poster: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.1', likes: { him: true, her: true }, category: 'kids' },
+        { id: 'w_universe', title: 'Как устроена Вселенная от Discovery', year: 2010, genre: 'Научно-популярный сериал', duration: '8 сезонов', isSeries: true, durationMins: 45, poster: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=600&q=80', addedBy: 'Он', ratingScore: '8.7', likes: { him: true, her: false }, category: 'kids' },
+        { id: 'w_humanbody', title: 'Человеческое тело: грани возможного от ВВС', year: 2008, genre: 'Научный, Биология', duration: '4 серии', isSeries: true, durationMins: 50, poster: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.5', likes: { him: true, her: true }, category: 'kids' },
+        { id: 'w_planetearth', title: 'Планета Земля (любая серия)', year: 2006, genre: 'Шедевр BBC, Живая природа', duration: '50 мин', isSeries: false, durationMins: 50, poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&q=80', addedBy: 'Вместе', ratingScore: '9.4', likes: { him: true, her: true }, category: 'kids' },
+        { id: 'w_chinadisney', title: 'Рожденные в Китае от Disney Nature', year: 2016, genre: 'Семейный, Животные', duration: '79 мин', isSeries: false, durationMins: 79, poster: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600&q=80', addedBy: 'Она', ratingScore: '7.9', likes: { him: true, her: true }, category: 'kids' },
+
+        // --- Сериалы ---
+        { id: 'w_friends', title: 'Друзья (Friends)', year: 1994, genre: 'Культовый ситком, Комедия', duration: '10 сезонов', isSeries: true, durationMins: 22, poster: 'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=600&q=80', addedBy: 'Она', ratingScore: '9.3', likes: { him: true, her: true }, category: 'series' },
+        { id: 'w_dragon', title: 'Дом дракона (House of the Dragon)', year: 2022, genre: 'Фэнтези, Драма', duration: '2 сезона', isSeries: true, durationMins: 60, poster: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.1', likes: { him: true, her: true }, category: 'series' },
+        { id: 'w_tbbt', title: 'Теория большого взрыва', year: 2007, genre: 'Комедия, Ситком', duration: '12 сезонов', isSeries: true, durationMins: 20, poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80', addedBy: 'Он', ratingScore: '8.6', likes: { him: true, her: false }, category: 'series' },
+        { id: 'w_calif', title: 'Блудливая Калифорния (Californication)', year: 2007, genre: 'Комедия, Драма', duration: '7 сезонов', isSeries: true, durationMins: 28, poster: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=80', addedBy: 'Он', ratingScore: '8.0', likes: { him: true, her: false }, category: 'series' },
+        { id: 'w_gangsterland', title: 'Гангстерленд (Gangsterland)', year: 2026, genre: 'Криминальная драма (Новый сериал Гая Ричи)', duration: '1 сезон', isSeries: true, durationMins: 55, poster: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80', addedBy: 'Вместе', ratingScore: 'Ожидается', likes: { him: true, her: true }, category: 'series' },
+        { id: 'w_ritchie', title: 'Джентльмены (сериал Гая Ричи)', year: 2024, genre: 'Криминал, Черная комедия', duration: '1 сезон (8 серий)', isSeries: true, durationMins: 55, poster: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?w=600&q=80', addedBy: 'Он', ratingScore: '7.8', likes: { him: true, her: true }, category: 'series' },
+        { id: 'w_tedlasso', title: 'Тед Лассо (Ted Lasso)', year: 2020, genre: 'Добрая комедия, Спорт', duration: '3 сезона', isSeries: true, durationMins: 40, poster: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=600&q=80', addedBy: 'Она', ratingScore: '8.8', likes: { him: true, her: true }, category: 'series' },
+        { id: 'w_stranger', title: 'Очень странные дела (Stranger Things)', year: 2016, genre: 'Фантастика, Мистика, 80-е', duration: '4 сезона', isSeries: true, durationMins: 55, poster: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.7', likes: { him: true, her: true }, category: 'series' },
+        { id: 'w_knight', title: 'Рыцарь семи королевств', year: 2025, genre: 'Фэнтези (Спин-офф Игры Престолов)', duration: '1 сезон', isSeries: true, durationMins: 50, poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.2', likes: { him: true, her: true }, category: 'series' },
+        { id: 'w_wednesday3', title: 'Уэнсдэй (Продолжение)', year: 2025, genre: 'Мистика, Фэнтези', duration: 'Сериал', isSeries: true, durationMins: 50, poster: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80', addedBy: 'Она', ratingScore: '8.0', likes: { him: false, her: true }, category: 'series' },
+        { id: 'w_tlou3', title: 'Одни из нас (3 сезон)', year: 2026, genre: 'Постапокалипсис, Драма', duration: 'Сериал', isSeries: true, durationMins: 55, poster: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80', addedBy: 'Вместе', ratingScore: '8.6', likes: { him: true, her: true }, category: 'series' }
+      ],
+      watched: [
+        { id: 'wat_gladiator', title: 'Гладиатор', dateWatched: '27 сентября 2026', placeWatched: 'Дома на диване', ratingHim: 9.5, ratingHer: 9.0, tags: 'Шедевр, Скотт, Циммер' },
+        { id: 'wat_spiderman', title: 'Человек паук Новый день', dateWatched: '26 сентября 2026', placeWatched: 'Кинотеатр', ratingHim: 8.0, ratingHer: 8.5, tags: 'Зрелищно, отличный экшен' },
+        { id: 'wat_troya', title: 'Троя', dateWatched: '22 августа 2026', placeWatched: 'Дома на проекторе', ratingHim: 9.0, ratingHer: 9.0, tags: 'Брэд Питт, масштаб' },
+        { id: 'wat_departed', title: 'Отступники', dateWatched: '18 июля 2026', placeWatched: 'Дома с пиццей', ratingHim: 9.0, ratingHer: 8.5, tags: 'Скорсезе, финал шок' },
+        { id: 'wat_ryan', title: 'Спасти рядового Райана', dateWatched: '18 июля 2026', placeWatched: 'Дома', ratingHim: 9.5, ratingHer: 8.5, tags: 'Спилберг, высадка в Нормандии' },
+        { id: 'wat_fracture', title: 'Перелом', dateWatched: '17 июля 2026', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 8.0, tags: 'Хопкинс, Гослинг, интрига' },
+        { id: 'wat_promise', title: 'Обещать не значит жениться', dateWatched: '11 июля 2026', placeWatched: 'Дома на диване', ratingHim: 7.0, ratingHer: 8.5, tags: 'Легкий ромком' },
+        { id: 'wat_sourcecode', title: 'Исходный код', dateWatched: '11 июля 2026', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.0, tags: 'Джилленхол, временная петля' },
+        { id: 'wat_resident', title: 'Обитель зла', dateWatched: '11 июля 2026', placeWatched: 'Дома', ratingHim: 7.5, ratingHer: 7.0, tags: 'Ностальгия, Милла Йовович' },
+        { id: 'wat_blindside', title: 'Невидимая сторона', dateWatched: '17 мая 2026', placeWatched: 'Дома с чаем', ratingHim: 8.5, ratingHer: 9.5, tags: 'Сандра Буллок, очень душевно' },
+        { id: 'wat_oppen', title: 'Оппенгеймер', dateWatched: '16 мая 2026', placeWatched: 'Дома на проекторе', ratingHim: 9.0, ratingHer: 8.5, tags: 'Нолан, звук, монтаж' },
+        { id: 'wat_sunshine', title: 'Пекло (Sunshine)', dateWatched: '16 мая 2026', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 7.5, tags: 'Дэнни Бойл, визуал' },
+        { id: 'wat_forever', title: 'Вечность', dateWatched: '16 мая 2026', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 8.5, tags: 'Сериал / фильм' },
+        { id: 'wat_sherlock', title: 'Шерлок Холмс (сериал)', dateWatched: 'Май 2026', placeWatched: 'Дома', ratingHim: 9.5, ratingHer: 9.5, tags: 'Камбербэтч, лучший дуэт' },
+        { id: 'wat_wed2', title: 'Уэнсдей (2 сезон)', dateWatched: '1 мая 2026', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 9.0, tags: 'Бёртон, танец' },
+        { id: 'wat_tlou2', title: 'Одни из нас (2 сезон)', dateWatched: '29 апреля 2026', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 9.0, tags: 'Эмоционально, драма' },
+        { id: 'wat_slevin', title: 'Счастливое число Слевина', dateWatched: '28 апреля 2026', placeWatched: 'Дома', ratingHim: 9.0, ratingHer: 8.5, tags: 'Канзас сити шаффл' },
+        { id: 'wat_avatar3', title: 'Аватар 3', dateWatched: '27 апреля 2026', placeWatched: 'Кинотеатр IMAX', ratingHim: 8.5, ratingHer: 9.0, tags: 'Графика, Кэмерон' },
+        { id: 'wat_kingspeech', title: 'Король говорит', dateWatched: '25 апреля 2026', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 9.0, tags: 'Колин Фёрт, Оскар' },
+        { id: 'wat_knivesout', title: 'Достать ножи', dateWatched: '25 апреля 2026', placeWatched: 'Дома с попкорном', ratingHim: 8.5, ratingHer: 9.0, tags: 'Блан, детектив' },
+        { id: 'wat_doomsday', title: 'Проект «Конец света»', dateWatched: '18 апреля 2026', placeWatched: 'Дома', ratingHim: 7.5, ratingHer: 7.5, tags: 'Фантастика' },
+        { id: 'wat_supernatural', title: 'Сверхъестественное', dateWatched: '18 апреля 2026', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 9.0, tags: 'Винчестеры, Импала' },
+        { id: 'wat_catchme', title: 'Поймай меня, если сможешь', dateWatched: '2 января 2026', placeWatched: 'Новогодние каникулы', ratingHim: 9.0, ratingHer: 9.0, tags: 'ДиКаприо, Хэнкс' },
+        { id: 'wat_peaky', title: 'Острые козырьки (сериал)', dateWatched: '24 августа 2025', placeWatched: 'Дома', ratingHim: 9.5, ratingHer: 9.0, tags: 'Томас Шелби, стиль' },
+        { id: 'wat_kateleo', title: 'Кейт и Лео', dateWatched: '12 августа 2025', placeWatched: 'Дома уютно', ratingHim: 7.5, ratingHer: 9.0, tags: 'Романтика, Хью Джекман' },
+        { id: 'wat_topgun2', title: 'Топ Ган: Мэверик', dateWatched: '6 августа 2025', placeWatched: 'Дома на громком звуке', ratingHim: 9.5, ratingHer: 8.5, tags: 'Том Круз, лучший экшен' },
+        { id: 'wat_truman', title: 'Шоу Трумана', dateWatched: '6 августа 2025', placeWatched: 'Дома', ratingHim: 9.0, ratingHer: 9.0, tags: 'Джим Кэрри, классика' },
+        { id: 'wat_yesman', title: 'Всегда Говори Да', dateWatched: '4 августа 2025', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.5, tags: 'Комедия, позитив' },
+        { id: 'wat_justice', title: 'Лига Справедливости', dateWatched: '4 августа 2025', placeWatched: 'Дома', ratingHim: 7.5, ratingHer: 7.0, tags: 'Снайдер кат' },
+        { id: 'wat_bvs', title: 'Бэтмен против Супермена', dateWatched: '2 августа 2025', placeWatched: 'Дома', ratingHim: 7.5, ratingHer: 7.0, tags: 'Марта' },
+        { id: 'wat_reality', title: 'Меняющие реальность', dateWatched: '1 августа 2025', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 8.0, tags: 'Мэтт Дэймон, шляпы' },
+        { id: 'wat_frost', title: 'Фрост против Никсона', dateWatched: '31 июля 2025', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 7.5, tags: 'Интервью, история' },
+        { id: 'wat_prestige', title: 'Престиж', dateWatched: '20 июля 2025', placeWatched: 'Дома', ratingHim: 9.5, ratingHer: 9.0, tags: 'Нолан, фокусы' },
+        { id: 'wat_patriot', title: 'Патриот', dateWatched: '20 июля 2025', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.0, tags: 'Мэл Гибсон' },
+        { id: 'wat_weapon', title: 'Смертельное оружие', dateWatched: '19 июля 2025', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 7.5, tags: 'Мерто и Риггс' },
+        { id: 'wat_inception', title: 'Начало', dateWatched: '21 июня 2025', placeWatched: 'Дома на проекторе', ratingHim: 9.5, ratingHer: 9.5, tags: 'Сон во сне' },
+        { id: 'wat_salyut7', title: 'Салют 7', dateWatched: '10 июня 2025', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 8.0, tags: 'Космос, Вдовиченков' },
+        { id: 'wat_alien', title: 'Чужой', dateWatched: '8 июня 2025', placeWatched: 'Дома вечером', ratingHim: 9.0, ratingHer: 8.0, tags: 'Ридли Скотт, классика хоррора' },
+        { id: 'wat_bogatyr', title: 'Последний богатырь (все части)', dateWatched: '17 мая 2025', placeWatched: 'Дома с попкорном', ratingHim: 8.0, ratingHer: 8.5, tags: 'Сказка, юмор' },
+        { id: 'wat_lotr', title: 'Властелин колец (все части)', dateWatched: '10 мая 2025', placeWatched: 'Киномарафон выходных', ratingHim: 10.0, ratingHer: 10.0, tags: 'Величайшая трилогия' },
+        { id: 'wat_ghostb12', title: 'Охотники за привидениями 1 и 2', dateWatched: '12 апреля 2025', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.0, tags: 'Билл Мюррей' },
+        { id: 'wat_replacements', title: 'Дублёры', dateWatched: '11 апреля 2025', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 7.5, tags: 'Киану Ривз, американский футбол' },
+        { id: 'wat_braveheart', title: 'Храброе сердце', dateWatched: '11 апреля 2025', placeWatched: 'Дома', ratingHim: 9.5, ratingHer: 9.0, tags: 'Свобода!' },
+        { id: 'wat_kpex', title: 'Планета Ка-Пэкс', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.5, tags: 'Кевин Спейси, загадка' },
+        { id: 'wat_got', title: 'Игра престолов (сериал)', dateWatched: '2024', placeWatched: 'Дома сериал', ratingHim: 9.5, ratingHer: 9.5, tags: 'Зима близко' },
+        { id: 'wat_aviator', title: 'Авиатор', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.0, tags: 'ДиКаприо, Говард Хьюз' },
+        { id: 'wat_martian', title: 'Марсианин', dateWatched: '2024', placeWatched: 'Дома с пиццей', ratingHim: 9.0, ratingHer: 9.0, tags: 'Картошка, Марс' },
+        { id: 'wat_apollo13', title: 'Аполлон 13', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.5, tags: 'Хьюстон, у нас проблемы' },
+        { id: 'wat_himym', title: 'Как я встретил вашу маму', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 9.0, ratingHer: 9.0, tags: 'Барни, легендарно' },
+        { id: 'wat_interstellar', title: 'Интерстеллар', dateWatched: '2024', placeWatched: 'Дома на проекторе', ratingHim: 10.0, ratingHer: 10.0, tags: 'Рыдали, время, Циммер' },
+        { id: 'wat_avatar1', title: 'Аватар', dateWatched: '2024', placeWatched: 'Дома 3D', ratingHim: 9.0, ratingHer: 9.0, tags: 'Пандора' },
+        { id: 'wat_titanic', title: 'Титаник', dateWatched: '2024', placeWatched: 'Дома уютно', ratingHim: 9.0, ratingHer: 10.0, tags: 'Джек и Роза' },
+        { id: 'wat_xmen', title: 'Люди Икс (Сага)', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 8.0, tags: 'Росомаха, мутанты' },
+        { id: 'wat_cinderella_man', title: 'Нокдаун', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 9.0, ratingHer: 9.0, tags: 'Рассел Кроу, бокс' },
+        { id: 'wat_ministry', title: 'Министерство неджентельменских дел', dateWatched: '2024', placeWatched: 'Кинотеатр', ratingHim: 8.0, ratingHer: 8.0, tags: 'Гай Ричи, Кавилл' },
+        { id: 'wat_arthur', title: 'Артур, ты король', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.0, ratingHer: 9.0, tags: 'Марк Уолберг и верный пес' },
+        { id: 'wat_darkknight', title: 'Темный рыцарь', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 10.0, ratingHer: 9.5, tags: 'Хит Леджер, шедевр' },
+        { id: 'wat_diehard12', title: 'Крепкий орешек 1, 2', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 9.0, ratingHer: 8.0, tags: 'Йо-хо-хо' },
+        { id: 'wat_life', title: 'Живое', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 7.5, ratingHer: 7.0, tags: 'Космос, триллер' },
+        { id: 'wat_men_parts', title: 'О чём говорят мужчины (1, ещё, продолжение)', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.5, tags: 'Квартет И, любимое' },
+        { id: 'wat_realsteel', title: 'Живая сталь', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.5, tags: 'Атом, роботы' },
+        { id: 'wat_eddie', title: 'Эдди Орёл', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 9.0, tags: 'Лыжи, вера в мечту' },
+        { id: 'wat_rush', title: 'Гонка', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 9.0, ratingHer: 8.5, tags: 'Лауда и Хант, Формула 1' },
+        { id: 'wat_happiness', title: 'В погоне за счастьем', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 9.0, ratingHer: 9.5, tags: 'Уилл Смит, очень трогательно' },
+        { id: 'wat_quietplace', title: 'Тихое место', dateWatched: '2024', placeWatched: 'Дома в темноте', ratingHim: 8.0, ratingHer: 8.0, tags: 'Саспенс, без звука' },
+        { id: 'wat_greenbook', title: 'Зелёная книга', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 9.5, ratingHer: 9.5, tags: 'Дружба, роуд-муви' },
+        { id: 'wat_moonfall', title: 'Падение Луны', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 6.5, ratingHer: 6.5, tags: 'Катастрофа' },
+        { id: 'wat_avengersend', title: 'Марвел. Мстители: Финал', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 9.0, ratingHer: 9.0, tags: 'Я — Железный Человек' },
+        { id: 'wat_lawabiding', title: 'Законопослушный гражданин', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.0, tags: 'Батлер, месть' },
+        { id: 'wat_passengers_pratt', title: 'Пассажиры', dateWatched: '2024', placeWatched: 'Дома', ratingHim: 8.5, ratingHer: 8.5, tags: 'Пратт, Лоуренс, космос' }
+      ],
+      solo: [
+        {
+          id: 's_1',
+          title: 'Медведь (The Bear)',
+          whoWatched: 'Он',
+          verdict: 'must_watch',
+          comment: 'Бешеный темп, кухня, эмоции. Обязательно надо глянуть вместе!',
+          addedToWishlist: true
+        }
+      ]
+    };
+
+    let appData = { ...initialUserData };
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        appData = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn('LocalStorage error', e);
+    }
+
+    let tgSettings = { botToken: '', chatId: '' };
+    try {
+      const storedTg = localStorage.getItem(TG_SETTINGS_KEY);
+      if (storedTg) tgSettings = JSON.parse(storedTg);
+    } catch (e) {}
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      } catch (e) {}
+    }
+
+    function resetToInitialUserData() {
+      appData = JSON.parse(JSON.stringify(initialUserData));
+      saveState();
+      renderAll();
+      showToast('База успешно сброшена к исходному списку из чата!');
+    }
+
+    function switchTab(tabId) {
+      const tabs = ['wishlist', 'matcher', 'watched', 'kp', 'nyt', 'solo', 'import'];
+      tabs.forEach(t => {
+        const el = document.getElementById(`view-${t}`);
+        if (el) el.classList.add('hidden');
+      });
+
+      const target = document.getElementById(`view-${tabId}`);
+      if (target) target.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        const isCurrent = btn.getAttribute('data-tab') === tabId;
+        if (isCurrent) {
+          btn.classList.add('text-rose-400');
+          btn.classList.remove('text-slate-400');
+        } else {
+          btn.classList.remove('text-rose-400');
+          btn.classList.add('text-slate-400');
+        }
+      });
+
+      if (tabId === 'matcher') {
+        initMatcherCard();
+      } else if (tabId === 'kp') {
+        renderKpList();
+      } else if (tabId === 'nyt') {
+        renderNytList();
+      }
+    }
+
+    function setActiveUser(user) {
+      appData.activeUser = user;
+      saveState();
+
+      const btnHim = document.getElementById('switchUserHim');
+      const btnHer = document.getElementById('switchUserHer');
+
+      if (user === 'him') {
+        btnHim.className = 'flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 bg-indigo-600 text-white shadow-sm';
+        btnHer.className = 'flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white';
+      } else {
+        btnHer.className = 'flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 bg-rose-600 text-white shadow-sm';
+        btnHim.className = 'flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white';
+      }
+
+      showToast(`Профиль переключен: ${user === 'him' ? '👨 Он' : '👩 Она'}`);
+      renderAll();
+    }
+
+    function showToast(message, isSuccess = true) {
+      const toast = document.getElementById('toastBox');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = message;
+      toastIcon.className = isSuccess ? 'fa-solid fa-circle-check text-emerald-400' : 'fa-solid fa-circle-exclamation text-rose-400';
+
+      toast.classList.remove('opacity-0', 'translate-y-[-10px]');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-[-10px]');
+      }, 2500);
+    }
+
+    async function triggerAiAutofill() {
+      const query = document.getElementById('aiAutofillQuery').value.trim();
+      if (!query) {
+        showToast('Введите название или ссылку!', false);
+        return;
+      }
+
+      const statusEl = document.getElementById('aiAutofillStatus');
+      const btn = document.getElementById('aiAutofillBtn');
+      statusEl.classList.remove('hidden');
+      btn.disabled = true;
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const systemPrompt = `You are a cinema specialist and metadata parser. 
+The user provides a movie/series title or URL.
+Extract accurate information in Russian.
+Respond ONLY with a JSON object matching this schema:
+{
+  "title": "Official Russian Title",
+  "year": 2024,
+  "genre": "Жанры через запятую",
+  "duration": "120 мин (или 2 сезона)",
+  "durationMins": 120,
+  "isSeries": false,
+  "ratingScore": "8.4",
+  "poster": "Valid HTTPS direct image URL or leave empty",
+  "shortNote": "Краткое интригующее описание в одно предложение"
+}`;
+
+        const payload = {
+          contents: [{ parts: [{ text: `Find metadata for: "${query}"` }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                title: { type: "STRING" },
+                year: { type: "NUMBER" },
+                genre: { type: "STRING" },
+                duration: { type: "STRING" },
+                durationMins: { type: "NUMBER" },
+                isSeries: { type: "BOOLEAN" },
+                ratingScore: { type: "STRING" },
+                poster: { type: "STRING" },
+                shortNote: { type: "STRING" }
+              },
+              required: ["title", "year", "genre", "duration"]
+            }
+          },
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (jsonText) {
+          const data = JSON.parse(jsonText);
+          if (data.title) document.getElementById('movieInputTitle').value = data.title;
+          if (data.genre) document.getElementById('movieInputGenre').value = data.genre;
+          if (data.duration) document.getElementById('movieInputDuration').value = data.duration;
+          if (data.year) document.getElementById('movieInputYear').value = data.year;
+          if (data.ratingScore) document.getElementById('movieInputRatingScore').value = data.ratingScore;
+          if (data.poster && data.poster.startsWith('http')) {
+            document.getElementById('movieInputPoster').value = data.poster;
+          } else {
+            document.getElementById('movieInputPoster').value = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=80';
+          }
+          if (data.shortNote) document.getElementById('movieInputTags').value = data.shortNote;
+
+          showToast(`✨ ИИ заполнил: ${data.title}!`);
+        } else {
+          showToast('Не удалось автоматически распознать, введите вручную', false);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Ошибка обращения к ИИ. Заполните вручную.', false);
+      } finally {
+        statusEl.classList.add('hidden');
+        btn.disabled = false;
+      }
+    }
+
+    async function sendTelegramNotification(text) {
+      if (!tgSettings.botToken || !tgSettings.chatId) return;
+      try {
+        const url = `https://api.telegram.org/bot${tgSettings.botToken}/sendMessage`;
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: tgSettings.chatId,
+            text: text,
+            parse_mode: 'HTML'
+          })
+        });
+      } catch (e) {
+        console.warn('Telegram send error', e);
+      }
+    }
+
+    function openTgSettingsModal() {
+      document.getElementById('tgBotTokenInput').value = tgSettings.botToken || '';
+      document.getElementById('tgChatIdInput').value = tgSettings.chatId || '';
+      document.getElementById('tgSettingsModal').classList.remove('hidden');
+    }
+
+    function closeTgSettingsModal() {
+      document.getElementById('tgSettingsModal').classList.add('hidden');
+    }
+
+    function saveTgSettings(e) {
+      e.preventDefault();
+      tgSettings.botToken = document.getElementById('tgBotTokenInput').value.trim();
+      tgSettings.chatId = document.getElementById('tgChatIdInput').value.trim();
+      localStorage.setItem(TG_SETTINGS_KEY, JSON.stringify(tgSettings));
+      closeTgSettingsModal();
+      showToast('Настройки Telegram сохранены!');
+    }
+
+    async function testTgBotMessage() {
+      const token = document.getElementById('tgBotTokenInput').value.trim();
+      const chat = document.getElementById('tgChatIdInput').value.trim();
+      if (!token || !chat) {
+        showToast('Заполните Bot Token и Chat ID!', false);
+        return;
+      }
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chat,
+            text: '🍿 <b>KinoVibe Bot подключен!</b>\nТеперь я буду уведомлять вас о новых фильмах и совпадениях на вечер ❤️',
+            parse_mode: 'HTML'
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('✅ Сообщение успешно отправлено в чат!');
+        } else {
+          showToast(`Ошибка Telegram: ${data.description}`, false);
+        }
+      } catch (err) {
+        showToast('Не удалось подключиться к Telegram', false);
+      }
+    }
+
+    function setFilterDuration(type) {
+      appData.filterDuration = type;
+      document.querySelectorAll('.duration-filter-btn').forEach(b => {
+        if (b.getAttribute('data-filter') === type) {
+          b.className = 'duration-filter-btn px-2.5 py-1 rounded-lg bg-slate-800 text-white font-medium whitespace-nowrap active:scale-95 transition-all';
+        } else {
+          b.className = 'duration-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium whitespace-nowrap active:scale-95 transition-all';
+        }
+      });
+      renderWishlist();
+    }
+
+    function renderWishlist() {
+      const container = document.getElementById('wishlistContainer');
+      const search = (document.getElementById('wishlistSearchInput')?.value || '').toLowerCase();
+      document.getElementById('wishlistCountBadge').textContent = appData.wishlist.length;
+
+      let filtered = appData.wishlist.filter(m => {
+        const matchesSearch = m.title.toLowerCase().includes(search) || (m.genre || '').toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+
+        if (appData.filterDuration === 'movies') {
+          return !m.isSeries && m.category !== 'kids';
+        }
+        if (appData.filterDuration === 'series') {
+          return m.isSeries || m.category === 'series';
+        }
+        if (appData.filterDuration === 'kids') {
+          return m.category === 'kids';
+        }
+        if (appData.filterDuration === 'short') {
+          return !m.isSeries && (m.durationMins || 120) <= 110;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="glass-card rounded-2xl p-8 text-center border border-slate-800 space-y-2">
+            <div class="text-3xl">🍿</div>
+            <p class="text-xs text-slate-400">Список пуст или ничего не найдено по фильтрам.</p>
+            <button onclick="openAddMovieModal('wishlist')" class="px-3 py-1.5 rounded-xl bg-slate-800 text-xs font-semibold text-rose-400 border border-rose-500/20 hover:bg-slate-700">Добавить фильм</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(movie => {
+        const hasMyLike = movie.likes && movie.likes[appData.activeUser];
+        const isMutualMatch = movie.likes?.him && movie.likes?.her;
+
+        return `
+          <div class="glass-card rounded-2xl p-3 border border-slate-800 flex items-center justify-between space-x-3 transition-all hover:border-slate-700">
+            <div class="flex items-center space-x-3 min-w-0">
+              <div class="w-14 h-20 rounded-xl bg-slate-800 flex-shrink-0 overflow-hidden relative border border-slate-700/50">
+                <img src="${movie.poster || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&q=80'}" alt="${movie.title}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x140/1e293b/cbd5e1?text=Kino'">
+                ${isMutualMatch ? '<span class="absolute top-1 left-1 px-1 rounded bg-rose-600 text-[8px] font-black text-white shadow">MATCH</span>' : ''}
+              </div>
+              <div class="min-w-0 space-y-1">
+                <div class="flex items-center space-x-1.5 flex-wrap">
+                  <h3 class="font-bold text-xs sm:text-sm text-white">${movie.title}</h3>
+                  <span class="text-[10px] text-slate-500 font-mono">(${movie.year || '—'})</span>
+                  ${movie.ratingScore ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">★ ${movie.ratingScore}</span>` : ''}
+                  ${movie.category === 'kids' ? `<span class="text-[8px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">С ДЕТЬМИ</span>` : ''}
+                </div>
+                <p class="text-[11px] text-slate-400 truncate">${movie.genre || 'Кино'}</p>
+                <div class="flex items-center space-x-2 text-[10px] text-slate-400">
+                  <span class="flex items-center space-x-1">
+                    <i class="fa-regular fa-clock text-[9px]"></i>
+                    <span>${movie.duration}</span>
+                  </span>
+                  <span>•</span>
+                  <span>От: <strong class="text-slate-300">${movie.addedBy || 'Вместе'}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-1.5 flex-shrink-0">
+              <button onclick="toggleLikeInWishlist('${movie.id}')" title="Лайкнуть для матчинга" class="w-8 h-8 rounded-xl ${hasMyLike ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40' : 'bg-slate-900 text-slate-500 border border-slate-800'} flex items-center justify-center text-xs active:scale-90 transition-all">
+                <i class="fa-solid fa-heart"></i>
+              </button>
+              <button onclick="markAsWatchedPrompt('${movie.id}')" title="Отметить как просмотренный" class="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-emerald-400 flex items-center justify-center text-xs active:scale-90 transition-all">
+                <i class="fa-solid fa-check"></i>
+              </button>
+              <button onclick="deleteFromWishlist('${movie.id}')" title="Удалить" class="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-slate-500 hover:text-rose-400 flex items-center justify-center text-xs active:scale-90 transition-all">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleLikeInWishlist(id) {
+      const movie = appData.wishlist.find(m => m.id === id);
+      if (!movie) return;
+      if (!movie.likes) movie.likes = { him: false, her: false };
+      movie.likes[appData.activeUser] = !movie.likes[appData.activeUser];
+      saveState();
+      renderWishlist();
+      checkMatchesPool();
+      showToast(movie.likes[appData.activeUser] ? 'Вам нравится этот фильм!' : 'Лайк снят');
+    }
+
+    function deleteFromWishlist(id) {
+      appData.wishlist = appData.wishlist.filter(m => m.id !== id);
+      saveState();
+      renderWishlist();
+      checkMatchesPool();
+      showToast('Тайтл удален из вишлиста');
+    }
+
+    function pickRandomWishlist() {
+      if (appData.wishlist.length === 0) {
+        showToast('Вишлист пуст!', false);
+        return;
+      }
+      const randomMovie = appData.wishlist[Math.floor(Math.random() * appData.wishlist.length)];
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      showToast(`🎲 Рулетка выбрала: «${randomMovie.title}»!`);
+      const input = document.getElementById('wishlistSearchInput');
+      if (input) {
+        input.value = randomMovie.title;
+        renderWishlist();
+      }
+    }
+
+    let currentMatcherIndex = 0;
+    const MATCH_GOAL = 5;
+
+    function getMutualMatches() {
+      return appData.wishlist.filter(m => m.likes?.him && m.likes?.her);
+    }
+
+    function checkMatchesPool() {
+      const matches = getMutualMatches();
+      const count = matches.length;
+
+      const progressEl = document.getElementById('matchProgressBar');
+      const counterText = document.getElementById('matchCounterText');
+      const poolThumbnails = document.getElementById('matchedPoolThumbnails');
+      const navIndicator = document.getElementById('matcherNavIndicator');
+
+      const pct = Math.min(100, Math.round((count / MATCH_GOAL) * 100));
+      if (progressEl) progressEl.style.width = `${pct}%`;
+      if (counterText) counterText.textContent = `${count} / ${MATCH_GOAL}`;
+
+      if (count > 0 && navIndicator) navIndicator.classList.remove('hidden');
+
+      if (poolThumbnails) {
+        if (count === 0) {
+          poolThumbnails.innerHTML = `<span class="text-[11px] text-slate-500 italic">Лайкайте карточки, общие совпадения будут собираться здесь...</span>`;
+        } else {
+          poolThumbnails.innerHTML = matches.map(m => `
+            <div class="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-900 border border-rose-500/30 text-rose-300 text-[11px] whitespace-nowrap shadow-sm flex-shrink-0">
+              <i class="fa-solid fa-heart text-[9px] text-rose-500"></i>
+              <span class="font-medium">${m.title}</span>
+            </div>
+          `).join('');
+        }
+      }
+
+      const stage1 = document.getElementById('matcherStage1');
+      const stage2 = document.getElementById('matcherStage2');
+
+      if (count >= MATCH_GOAL) {
+        if (stage1) stage1.classList.add('hidden');
+        if (stage2) {
+          stage2.classList.remove('hidden');
+          renderSuperFinalShowdown(matches.slice(0, MATCH_GOAL));
+        }
+      } else {
+        if (stage1) stage1.classList.remove('hidden');
+        if (stage2) stage2.classList.add('hidden');
+      }
+    }
+
+    function initMatcherCard() {
+      checkMatchesPool();
+      const swiperLabel = document.getElementById('currentSwiperLabel');
+      if (swiperLabel) {
+        swiperLabel.textContent = appData.activeUser === 'him' ? '👨 Он' : '👩 Она';
+      }
+
+      const stack = document.getElementById('swipeCardStack');
+      if (!stack) return;
+
+      const candidates = appData.wishlist;
+      if (candidates.length === 0) {
+        stack.innerHTML = `
+          <div class="glass-card rounded-3xl p-6 text-center border border-slate-800 space-y-3">
+            <div class="text-4xl">🎬</div>
+            <h3 class="font-bold text-white text-sm">В вишлисте нет фильмов</h3>
+            <p class="text-xs text-slate-400">Добавьте фильмы во вкладке «Хотим» или импортируйте их из заметок.</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (currentMatcherIndex >= candidates.length) {
+        currentMatcherIndex = 0;
+      }
+
+      const movie = candidates[currentMatcherIndex];
+      const hasLiked = movie.likes && movie.likes[appData.activeUser];
+
+      stack.innerHTML = `
+        <div id="activeSwipeCard" class="w-full h-full rounded-3xl overflow-hidden relative glass-card border border-slate-700/80 shadow-2xl flex flex-col justify-end p-5 select-none swipe-card-transition">
+          <img src="${movie.poster || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=80'}" alt="${movie.title}" class="absolute inset-0 w-full h-full object-cover filter brightness-[0.55]" onerror="this.src='https://placehold.co/400x600/0f172a/cbd5e1?text=Cinema'">
+          
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/45 to-transparent"></div>
+
+          <div class="relative z-10 space-y-2">
+            <div class="flex items-center space-x-2 flex-wrap">
+              <span class="px-2 py-0.5 rounded-lg bg-rose-500/85 backdrop-blur text-white text-[10px] font-bold uppercase tracking-wider">
+                ${movie.isSeries ? 'Сериал' : 'Фильм'}
+              </span>
+              <span class="text-xs text-slate-300 font-mono">📅 ${movie.year || '—'}</span>
+              <span class="text-xs text-slate-300 font-mono">⏱️ ${movie.duration}</span>
+              ${movie.ratingScore ? `<span class="text-xs text-amber-300 font-bold">★ ${movie.ratingScore}</span>` : ''}
+            </div>
+
+            <h3 class="font-display font-extrabold text-2xl text-white drop-shadow">${movie.title}</h3>
+            <p class="text-xs text-slate-300 line-clamp-2">${movie.genre}</p>
+
+            <div class="pt-2 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80">
+              <span>Добавил(а): <strong class="text-slate-200">${movie.addedBy}</strong></span>
+              <span>Статус: <strong class="${hasLiked ? 'text-emerald-400' : 'text-slate-400'}">${hasLiked ? 'Уже лайкнут вами' : 'Ждет решения'}</strong></span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleSwipeAction(isLike) {
+      const candidates = appData.wishlist;
+      if (candidates.length === 0) return;
+
+      const movie = candidates[currentMatcherIndex];
+      if (!movie.likes) movie.likes = { him: false, her: false };
+
+      const card = document.getElementById('activeSwipeCard');
+      if (card) {
+        card.style.transform = isLike ? 'translateX(110px) rotate(14deg)' : 'translateX(-110px) rotate(-14deg)';
+        card.style.opacity = '0';
+      }
+
+      setTimeout(() => {
+        movie.likes[appData.activeUser] = isLike;
+        saveState();
+
+        if (movie.likes.him && movie.likes.her) {
+          triggerMatchCelebration(movie);
+        }
+
+        currentMatcherIndex++;
+        if (currentMatcherIndex >= candidates.length) {
+          currentMatcherIndex = 0;
+        }
+
+        checkMatchesPool();
+        initMatcherCard();
+        renderWishlist();
+      }, 230);
+    }
+
+    function triggerMatchCelebration(movie) {
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      showToast(`🎉 Совпадение! Вы оба хотите «${movie.title}»!`);
+      sendTelegramNotification(`🎉 <b>Взаимный Match!</b>\nВы оба лайкнули: <b>«${movie.title}»</b>. Добавьте его в финал вечера!`);
+    }
+
+    function renderSuperFinalShowdown(fiveMatches) {
+      const container = document.getElementById('finalShowdownContainer');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 gap-2.5 text-left">
+          ${fiveMatches.map((m, idx) => `
+            <div class="glass-card rounded-2xl p-3 border border-purple-500/20 hover:border-purple-400/50 flex items-center justify-between transition-all group">
+              <div class="flex items-center space-x-3 min-w-0">
+                <span class="w-7 h-7 rounded-full bg-purple-900/60 text-purple-300 text-xs font-extrabold flex items-center justify-center border border-purple-500/30 flex-shrink-0">
+                  ${idx + 1}
+                </span>
+                <div class="min-w-0">
+                  <h4 class="font-bold text-xs text-white truncate">${m.title}</h4>
+                  <p class="text-[10px] text-slate-400">${m.genre} • ${m.duration}</p>
+                </div>
+              </div>
+              <button onclick="crownWinner('${m.id}')" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 hover:from-rose-600 text-white text-[11px] font-bold shadow-md shadow-rose-500/20 active:scale-95 transition-all flex-shrink-0">
+                👑 Смотрим это!
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function crownWinner(movieId) {
+      const movie = appData.wishlist.find(m => m.id === movieId);
+      if (!movie) return;
+
+      confetti({ particleCount: 120, spread: 90, origin: { y: 0.5 } });
+      sendTelegramNotification(`👑 <b>ВЫБОР ВЕЧЕРА СДЕЛАН!</b>\nПара выбрала для просмотра: <b>«${movie.title}»</b> (${movie.year || '2024'}). Приятного киносеанса! 🍿`);
+
+      const stage2 = document.getElementById('matcherStage2');
+      if (stage2) {
+        stage2.innerHTML = `
+          <div class="p-6 space-y-4">
+            <div class="text-5xl animate-bounce">🍿👑</div>
+            <span class="inline-block px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+              ЧЕМПИОН СЕГОДНЯШНЕГО ВЕЧЕРА!
+            </span>
+            <h2 class="text-2xl font-extrabold text-white font-display">${movie.title}</h2>
+            <p class="text-xs text-slate-300 max-w-sm mx-auto">
+              ${movie.genre} • ${movie.duration}. Запасайтесь вкусняшками и начинайте просмотр!
+            </p>
+            <div class="pt-3 flex items-center justify-center space-x-3">
+              <button onclick="markAsWatchedPrompt('${movie.id}')" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 active:scale-95 transition-all">
+                Отметить как просмотренный
+              </button>
+              <button onclick="resetMatchSession()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs hover:bg-slate-700 active:scale-95 transition-all">
+                Сбросить подбор
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function resetMatchSession() {
+      appData.wishlist.forEach(m => {
+        m.likes = { him: false, her: false };
+      });
+      saveState();
+      currentMatcherIndex = 0;
+      checkMatchesPool();
+      initMatcherCard();
+      renderWishlist();
+      showToast('Матчинг сброшен. Можно начать новый раунд свайпов!');
+    }
+
+    function renderWatched() {
+      const container = document.getElementById('watchedContainer');
+      const search = (document.getElementById('watchedSearchInput')?.value || '').toLowerCase();
+      document.getElementById('watchedCountBadge').textContent = appData.watched.length;
+
+      let filtered = appData.watched.filter(w => {
+        return w.title.toLowerCase().includes(search) || 
+               (w.dateWatched || '').toLowerCase().includes(search) || 
+               (w.placeWatched || '').toLowerCase().includes(search) ||
+               (w.tags || '').toLowerCase().includes(search);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="glass-card rounded-2xl p-8 text-center border border-slate-800 space-y-2">
+            <div class="text-3xl">🎬</div>
+            <p class="text-xs text-slate-400">Пока нет записей о просмотренных фильмах.</p>
+            <button onclick="openAddMovieModal('watched')" class="px-3 py-1.5 rounded-xl bg-slate-800 text-xs font-semibold text-emerald-400 border border-emerald-500/20">Добавить фильм</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        const hasDate = !!item.dateWatched && item.dateWatched !== 'Из заметок';
+        const hasPlace = !!item.placeWatched && item.placeWatched !== 'Дома';
+
+        return `
+          <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3 transition-all hover:border-slate-700">
+            <div class="flex items-start justify-between space-x-3">
+              <div class="flex items-center space-x-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="font-bold text-sm text-white truncate">${item.title}</h3>
+                  <div class="flex items-center space-x-2 text-[11px] text-slate-300 mt-0.5 flex-wrap">
+                    <span class="inline-flex items-center space-x-1 font-semibold ${hasDate ? 'text-emerald-400' : 'text-slate-400'}">
+                      <i class="fa-regular fa-calendar text-[10px]"></i>
+                      <span>${item.dateWatched || 'Указать дату'}</span>
+                    </span>
+                    <span>•</span>
+                    <span class="inline-flex items-center space-x-1 ${hasPlace ? 'text-teal-300' : 'text-slate-400'}">
+                      <i class="fa-solid fa-location-dot text-[10px]"></i>
+                      <span>${item.placeWatched || 'Указать где'}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-1 flex-shrink-0">
+                <button onclick="openEditWatchedModal('${item.id}')" title="Изменить дату, место и оценки" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 active:scale-95 transition-all flex items-center space-x-1.5">
+                  <i class="fa-solid fa-pen-to-square text-emerald-400 text-xs"></i>
+                  <span class="hidden sm:inline">Изменить</span>
+                </button>
+                <button onclick="deleteFromWatched('${item.id}')" title="Удалить" class="text-slate-600 hover:text-rose-400 p-1.5 text-xs transition-colors rounded-lg hover:bg-slate-800">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+              <div class="bg-indigo-950/40 rounded-xl p-2 border border-indigo-500/20 flex items-center justify-between">
+                <span class="text-[11px] text-indigo-300 font-semibold flex items-center space-x-1">
+                  <span>👨</span>
+                  <span>Его оценка:</span>
+                </span>
+                <span class="font-mono font-bold text-indigo-400 text-xs">⭐ ${item.ratingHim || '—'}/10</span>
+              </div>
+              <div class="bg-rose-950/40 rounded-xl p-2 border border-rose-500/20 flex items-center justify-between">
+                <span class="text-[11px] text-rose-300 font-semibold flex items-center space-x-1">
+                  <span>👩</span>
+                  <span>Её оценка:</span>
+                </span>
+                <span class="font-mono font-bold text-rose-400 text-xs">⭐ ${item.ratingHer || '—'}/10</span>
+              </div>
+            </div>
+
+            ${item.tags ? `
+              <div class="flex flex-wrap gap-1 text-[10px]">
+                ${item.tags.split(',').map(tag => `
+                  <span class="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300 font-medium"># ${tag.trim()}</span>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            ${item.notes ? `
+              <div class="text-[11px] text-slate-300 bg-slate-900/60 rounded-xl p-2.5 border border-slate-800 italic">
+                "${item.notes}"
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openEditWatchedModal(id) {
+      const item = appData.watched.find(w => w.id === id);
+      if (!item) return;
+
+      document.getElementById('editWatchedId').value = item.id;
+      document.getElementById('editWatchedTitleDisplay').textContent = item.title;
+      document.getElementById('editWatchedDateInput').value = item.dateWatched || '';
+      document.getElementById('editWatchedPlaceInput').value = item.placeWatched || '';
+      document.getElementById('editWatchedRatingHim').value = item.ratingHim !== undefined && item.ratingHim !== null ? item.ratingHim : '';
+      document.getElementById('editWatchedRatingHer').value = item.ratingHer !== undefined && item.ratingHer !== null ? item.ratingHer : '';
+      document.getElementById('editWatchedTagsInput').value = item.tags || '';
+      document.getElementById('editWatchedNotesInput').value = item.notes || '';
+
+      document.getElementById('editWatchedModal').classList.remove('hidden');
+    }
+
+    function closeEditWatchedModal() {
+      document.getElementById('editWatchedModal').classList.add('hidden');
+    }
+
+    function setQuickDate(val) {
+      document.getElementById('editWatchedDateInput').value = val;
+    }
+
+    function setQuickPlace(val) {
+      document.getElementById('editWatchedPlaceInput').value = val;
+    }
+
+    function handleEditWatchedSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('editWatchedId').value;
+      const item = appData.watched.find(w => w.id === id);
+      if (!item) return;
+
+      item.dateWatched = document.getElementById('editWatchedDateInput').value.trim() || 'Ранее';
+      item.placeWatched = document.getElementById('editWatchedPlaceInput').value.trim() || 'Дома';
+      
+      const him = document.getElementById('editWatchedRatingHim').value;
+      item.ratingHim = him ? parseFloat(him) : null;
+
+      const her = document.getElementById('editWatchedRatingHer').value;
+      item.ratingHer = her ? parseFloat(her) : null;
+
+      item.tags = document.getElementById('editWatchedTagsInput').value.trim();
+      item.notes = document.getElementById('editWatchedNotesInput').value.trim();
+
+      saveState();
+      renderWatched();
+      closeEditWatchedModal();
+      showToast(`Сеанс «${item.title}» успешно обновлен!`);
+      sendTelegramNotification(`📝 <b>Обновлен сеанс:</b> «<b>${item.title}</b>»\n📅 ${item.dateWatched} • 📍 ${item.placeWatched}\n👨: ${item.ratingHim || '—'}/10 | 👩: ${item.ratingHer || '—'}/10`);
+    }
+
+    function markAsWatchedPrompt(wishlistId) {
+      const movie = appData.wishlist.find(m => m.id === wishlistId);
+      if (!movie) return;
+
+      openAddMovieModal('watched');
+      document.getElementById('movieInputTitle').value = movie.title;
+      document.getElementById('movieInputGenre').value = movie.genre || '';
+      document.getElementById('movieInputYear').value = movie.year || 2024;
+      document.getElementById('movieInputWatchedDate').value = 'Сегодня';
+      document.getElementById('movieInputWatchedPlace').value = 'Дома на диване';
+    }
+
+    function deleteFromWatched(id) {
+      appData.watched = appData.watched.filter(w => w.id !== id);
+      saveState();
+      renderWatched();
+      showToast('Запись удалена');
+    }
+
+    function setKpFilter(filter) {
+      appData.kpFilter = filter;
+      document.querySelectorAll('.kp-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-kp') === filter) {
+          btn.className = 'kp-filter-btn px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold';
+        } else {
+          btn.className = 'kp-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium';
+        }
+      });
+      renderKpList();
+    }
+
+    function renderKpList() {
+      const container = document.getElementById('kpContainer');
+      const search = (document.getElementById('kpSearchInput')?.value || '').toLowerCase();
+
+      if (!appData.kpChecklist) appData.kpChecklist = { seen: {}, want: {} };
+
+      appData.watched.forEach(w => {
+        const found = kpTop250Films.find(kp => kp.title.toLowerCase().includes(w.title.toLowerCase()) || w.title.toLowerCase().includes(kp.title.toLowerCase()));
+        if (found) {
+          appData.kpChecklist.seen[found.rank] = true;
+        }
+      });
+
+      let seenCount = Object.values(appData.kpChecklist.seen).filter(Boolean).length;
+      let wantCount = Object.values(appData.kpChecklist.want).filter(Boolean).length;
+
+      document.getElementById('kpSeenStats').textContent = `${seenCount} / 250`;
+      document.getElementById('kpWantStats').textContent = `${wantCount} / 250`;
+
+      let filtered = kpTop250Films.filter(f => {
+        const matchesSearch = f.title.toLowerCase().includes(search) || f.orig.toLowerCase().includes(search) || (f.dir || '').toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+
+        const isSeen = !!appData.kpChecklist.seen[f.rank];
+        const isWant = !!appData.kpChecklist.want[f.rank];
+
+        if (appData.kpFilter === 'seen') return isSeen;
+        if (appData.kpFilter === 'want') return isWant;
+        if (appData.kpFilter === 'unseen') return !isSeen;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full glass-card rounded-2xl p-8 text-center border border-slate-800 space-y-2">
+            <p class="text-xs text-slate-400">Ничего не найдено по фильтрам.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(f => {
+        const isSeen = !!appData.kpChecklist.seen[f.rank];
+        const isWant = !!appData.kpChecklist.want[f.rank];
+
+        return `
+          <div class="glass-card rounded-2xl p-3 border ${isSeen ? 'border-emerald-500/30 bg-emerald-950/10' : (isWant ? 'border-rose-500/30 bg-rose-950/10' : 'border-slate-800')} flex items-center justify-between space-x-2 transition-all">
+            <div class="flex items-center space-x-2.5 min-w-0">
+              <span class="w-7 h-7 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 text-xs font-mono font-black flex items-center justify-center flex-shrink-0">
+                ${f.rank}
+              </span>
+              <div class="min-w-0">
+                <div class="flex items-center space-x-1.5 flex-wrap">
+                  <h4 class="font-bold text-xs text-white truncate">${f.title}</h4>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">★ ${f.kp}</span>
+                </div>
+                <p class="text-[10px] text-slate-400 truncate">${f.orig} (${f.year}) • ${f.dir}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-1.5 flex-shrink-0">
+              <button onclick="toggleKpStatus(${f.rank}, 'seen')" title="Отметить как просмотренный" class="px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${isSeen ? 'bg-emerald-500 text-slate-950 shadow' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-emerald-400'}">
+                <i class="fa-solid fa-check mr-0.5"></i>
+                <span class="hidden sm:inline">Смотрели</span>
+              </button>
+
+              <button onclick="toggleKpStatus(${f.rank}, 'want')" title="Добавить в вишлист" class="px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${isWant ? 'bg-rose-500 text-white shadow' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-rose-400'}">
+                <i class="fa-solid fa-heart mr-0.5"></i>
+                <span class="hidden sm:inline">Хотим</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleKpStatus(rank, type) {
+      if (!appData.kpChecklist) appData.kpChecklist = { seen: {}, want: {} };
+      const current = !!appData.kpChecklist[type][rank];
+      appData.kpChecklist[type][rank] = !current;
+
+      const movie = kpTop250Films.find(f => f.rank === rank);
+      if (!current && type === 'want' && movie) {
+        const exists = appData.wishlist.some(m => m.title.toLowerCase().includes(movie.title.toLowerCase()));
+        if (!exists) {
+          appData.wishlist.unshift({
+            id: 'w_kp_' + rank,
+            title: movie.title,
+            year: movie.year,
+            genre: 'Топ-250 Кинопоиска, ' + movie.dir,
+            duration: '120 мин',
+            isSeries: false,
+            durationMins: 120,
+            poster: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=80',
+            addedBy: 'Вместе',
+            ratingScore: movie.kp.toString(),
+            category: 'movies',
+            likes: { him: true, her: true }
+          });
+          showToast(`«${movie.title}» добавлен в вишлист из Топ-250 КП!`);
+          sendTelegramNotification(`⭐ <b>Шедевр из Топ-250 Кинопоиска в вишлисте!</b>\nФильм <b>«${movie.title}»</b> (#${rank} в рейтинге КП, оценка ★ ${movie.kp}) добавлен на вечер.`);
+        }
+      } else if (!current && type === 'seen' && movie) {
+        const existsWatched = appData.watched.some(w => w.title.toLowerCase().includes(movie.title.toLowerCase()));
+        if (!existsWatched) {
+          appData.watched.unshift({
+            id: 'wat_kp_' + rank,
+            title: movie.title,
+            dateWatched: 'Ранее',
+            placeWatched: 'Дома',
+            ratingHim: 9.0,
+            ratingHer: 9.0,
+            tags: 'Топ-250 Кинопоиска'
+          });
+        }
+      }
+
+      saveState();
+      renderKpList();
+      renderWishlist();
+      renderWatched();
+    }
+
+    function setNytFilter(filter) {
+      appData.nytFilter = filter;
+      document.querySelectorAll('.nyt-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-nyt') === filter) {
+          btn.className = 'nyt-filter-btn px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold';
+        } else {
+          btn.className = 'nyt-filter-btn px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-medium';
+        }
+      });
+      renderNytList();
+    }
+
+    function renderNytList() {
+      const container = document.getElementById('nytContainer');
+      const search = (document.getElementById('nytSearchInput')?.value || '').toLowerCase();
+      
+      if (!appData.nytChecklist) appData.nytChecklist = { seen: {}, want: {} };
+
+      let seenCount = Object.values(appData.nytChecklist.seen).filter(Boolean).length;
+      let wantCount = Object.values(appData.nytChecklist.want).filter(Boolean).length;
+
+      document.getElementById('nytSeenStats').textContent = `${seenCount} / 100`;
+      document.getElementById('nytWantStats').textContent = `${wantCount} / 100`;
+
+      let filtered = nytTop100Shows.filter(show => {
+        const matchesSearch = show.title.toLowerCase().includes(search) || show.ru.toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+
+        const isSeen = !!appData.nytChecklist.seen[show.rank];
+        const isWant = !!appData.nytChecklist.want[show.rank];
+
+        if (appData.nytFilter === 'seen') return isSeen;
+        if (appData.nytFilter === 'want') return isWant;
+        if (appData.nytFilter === 'unseen') return !isSeen;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full glass-card rounded-2xl p-8 text-center border border-slate-800 space-y-2">
+            <p class="text-xs text-slate-400">Ничего не найдено по фильтрам.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(show => {
+        const isSeen = !!appData.nytChecklist.seen[show.rank];
+        const isWant = !!appData.nytChecklist.want[show.rank];
+
+        return `
+          <div class="glass-card rounded-2xl p-3 border ${isSeen ? 'border-emerald-500/30 bg-emerald-950/10' : (isWant ? 'border-rose-500/30 bg-rose-950/10' : 'border-slate-800')} flex items-center justify-between space-x-2 transition-all">
+            <div class="flex items-center space-x-2.5 min-w-0">
+              <span class="w-7 h-7 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 text-xs font-mono font-black flex items-center justify-center flex-shrink-0">
+                ${show.rank}
+              </span>
+              <div class="min-w-0">
+                <h4 class="font-bold text-xs text-white truncate">${show.title}</h4>
+                <p class="text-[10px] text-slate-400 truncate">${show.ru} • <span class="font-mono">${show.years}</span></p>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-1.5 flex-shrink-0">
+              <button onclick="toggleNytStatus(${show.rank}, 'seen')" title="Отметить как просмотренный" class="px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${isSeen ? 'bg-emerald-500 text-slate-950 shadow' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-emerald-400'}">
+                <i class="fa-solid fa-check mr-0.5"></i>
+                <span class="hidden sm:inline">Смотрели</span>
+              </button>
+
+              <button onclick="toggleNytStatus(${show.rank}, 'want')" title="Добавить в вишлист" class="px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${isWant ? 'bg-rose-500 text-white shadow' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-rose-400'}">
+                <i class="fa-solid fa-heart mr-0.5"></i>
+                <span class="hidden sm:inline">Хотим</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleNytStatus(rank, type) {
+      if (!appData.nytChecklist) appData.nytChecklist = { seen: {}, want: {} };
+      const current = !!appData.nytChecklist[type][rank];
+      appData.nytChecklist[type][rank] = !current;
+
+      const show = nytTop100Shows.find(s => s.rank === rank);
+      if (!current && type === 'want' && show) {
+        const exists = appData.wishlist.some(m => m.title.toLowerCase().includes(show.title.toLowerCase()));
+        if (!exists) {
+          appData.wishlist.unshift({
+            id: 'w_nyt_' + rank,
+            title: `${show.title} (${show.ru})`,
+            year: parseInt(show.years) || 2020,
+            genre: 'Топ-100 The New York Times, Сериал',
+            duration: 'Сериал',
+            isSeries: true,
+            durationMins: 50,
+            poster: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80',
+            addedBy: 'Вместе',
+            ratingScore: 'NYT #' + rank,
+            category: 'series',
+            likes: { him: true, her: true }
+          });
+          showToast(`«${show.title}» добавлен в ваш общий вишлист!`);
+          sendTelegramNotification(`🏆 <b>Топ NYT в вишлисте!</b>\nСериал <b>«${show.title}»</b> (#${rank} в рейтинге NYT) добавлен на совместный вечер.`);
+        }
+      }
+
+      saveState();
+      renderNytList();
+      renderWishlist();
+    }
+
+    function renderSolo() {
+      const container = document.getElementById('soloContainer');
+      document.getElementById('soloCountBadge').textContent = appData.solo.length;
+
+      if (appData.solo.length === 0) {
+        container.innerHTML = `
+          <div class="glass-card rounded-2xl p-8 text-center border border-slate-800 space-y-2">
+            <div class="text-3xl">💡</div>
+            <p class="text-xs text-slate-400">Пока нет личных рекомендаций.</p>
+            <button onclick="openAddSoloModal()" class="px-3 py-1.5 rounded-xl bg-purple-900/40 text-purple-300 border border-purple-500/30 text-xs font-semibold">Посоветовать фильм</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = appData.solo.map(item => {
+        let verdictBadge = '';
+        if (item.verdict === 'must_watch') {
+          verdictBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold text-[10px]">🔥 Шедевр — надо вместе!</span>`;
+        } else if (item.verdict === 'good_once') {
+          verdictBadge = `<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[10px]">👌 На один разок</span>`;
+        } else {
+          verdictBadge = `<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-[10px]">⛔ Не трать время</span>`;
+        }
+
+        return `
+          <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2.5">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <h3 class="font-bold text-xs text-white">${item.title}</h3>
+                  <span class="text-[11px] text-slate-400">(${item.whoWatched === 'Он' ? '👨 Он' : '👩 Она'} смотрел(а))</span>
+                </div>
+                <div class="mt-1.5">${verdictBadge}</div>
+              </div>
+              <button onclick="deleteSolo('${item.id}')" class="text-slate-600 hover:text-rose-400 p-1 text-xs">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+
+            ${item.comment ? `<p class="text-xs text-slate-300 italic bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">"${item.comment}"</p>` : ''}
+
+            <div class="pt-1 flex items-center justify-end">
+              ${item.addedToWishlist ? `
+                <span class="text-[11px] text-emerald-400 font-semibold flex items-center space-x-1">
+                  <i class="fa-solid fa-check"></i>
+                  <span>Уже в общем вишлисте</span>
+                </span>
+              ` : `
+                <button onclick="transferSoloToWishlist('${item.id}')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold active:scale-95 transition-all flex items-center space-x-1.5">
+                  <i class="fa-solid fa-plus text-rose-400"></i>
+                  <span>Добавить в совместный вишлист</span>
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function transferSoloToWishlist(soloId) {
+      const item = appData.solo.find(s => s.id === soloId);
+      if (!item) return;
+
+      const newMovie = {
+        id: 'w_' + Date.now(),
+        title: item.title,
+        year: 2024,
+        genre: 'По рекомендации партнера',
+        duration: '120 мин',
+        isSeries: false,
+        durationMins: 120,
+        poster: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=600&q=80',
+        addedBy: item.whoWatched,
+        ratingScore: '8.0',
+        category: 'movies',
+        likes: { him: false, her: false }
+      };
+
+      appData.wishlist.unshift(newMovie);
+      item.addedToWishlist = true;
+      saveState();
+      renderAll();
+      showToast(`«${item.title}» перенесен в совместный вишлист!`);
+      sendTelegramNotification(`💡 <b>Новая рекомендация в вишлисте!</b>\n${item.whoWatched} перенес тайтл: <b>«${item.title}»</b> в общий список.`);
+    }
+
+    function deleteSolo(id) {
+      appData.solo = appData.solo.filter(s => s.id !== id);
+      saveState();
+      renderSolo();
+      showToast('Рекомендация удалена');
+    }
+
+    function parseNotesText(text) {
+      if (!text) return [];
+      const lines = text.split('\n');
+      const results = [];
+
+      lines.forEach(rawLine => {
+        let line = rawLine.trim();
+        if (!line) return;
+
+        line = line.replace(/^[\d]+[\.\)\-\s]+/, '');
+        line = line.replace(/^[\-\*\•\—\–]+\s*/, '');
+        line = line.trim();
+
+        if (line.length > 1) {
+          results.push(line);
+        }
+      });
+
+      return results;
+    }
+
+    function previewNotesImport() {
+      const text = document.getElementById('rawNotesInput').value;
+      const parsed = parseNotesText(text);
+
+      const previewBox = document.getElementById('importPreviewBox');
+      const countEl = document.getElementById('parsedCount');
+      const listEl = document.getElementById('parsedItemsList');
+
+      if (parsed.length === 0) {
+        showToast('Ничего не распознано в тексте', false);
+        previewBox.classList.add('hidden');
+        return;
+      }
+
+      countEl.textContent = parsed.length;
+      listEl.innerHTML = parsed.map((item, idx) => `
+        <div class="py-0.5 flex items-center space-x-2">
+          <span class="text-slate-500">${idx + 1}.</span>
+          <span class="text-slate-200">${item}</span>
+        </div>
+      `).join('');
+
+      previewBox.classList.remove('hidden');
+      showToast(`Распознано: ${parsed.length} фильмов`);
+    }
+
+    function executeNotesImport() {
+      const text = document.getElementById('rawNotesInput').value;
+      const parsed = parseNotesText(text);
+
+      if (parsed.length === 0) {
+        showToast('Поле ввода пусто! Вставьте список из заметок.', false);
+        return;
+      }
+
+      const target = document.querySelector('input[name="importTarget"]:checked')?.value || 'wishlist';
+
+      if (target === 'wishlist') {
+        parsed.forEach((title, idx) => {
+          appData.wishlist.unshift({
+            id: 'w_' + (Date.now() + idx),
+            title: title,
+            year: 2024,
+            genre: 'Импортировано из заметок',
+            duration: '110 мин',
+            isSeries: false,
+            durationMins: 110,
+            poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=80',
+            addedBy: 'Вместе',
+            ratingScore: '7.8',
+            category: 'movies',
+            likes: { him: false, her: false }
+          });
+        });
+        showToast(`Успешно добавлено ${parsed.length} фильмов в «Хотим посмотреть»!`);
+        switchTab('wishlist');
+      } else {
+        parsed.forEach((title, idx) => {
+          appData.watched.unshift({
+            id: 'wat_' + (Date.now() + idx),
+            title: title,
+            dateWatched: 'Из заметок',
+            placeWatched: 'Дома',
+            ratingHim: 8.0,
+            ratingHer: 8.0,
+            tags: 'Архив заметок'
+          });
+        });
+        showToast(`Успешно добавлено ${parsed.length} фильмов в «Уже посмотрели»!`);
+        switchTab('watched');
+      }
+
+      document.getElementById('rawNotesInput').value = '';
+      document.getElementById('importPreviewBox').classList.add('hidden');
+      saveState();
+      renderAll();
+    }
+
+    function openAddMovieModal(target = 'wishlist') {
+      document.getElementById('movieFormTarget').value = target;
+      const titleEl = document.getElementById('movieModalTitle');
+      const watchedFields = document.getElementById('watchedExtraFields');
+
+      if (target === 'wishlist') {
+        titleEl.textContent = 'Добавить в «Хотим посмотреть»';
+        watchedFields.classList.add('hidden');
+      } else {
+        titleEl.textContent = 'Записать в «Уже посмотрели»';
+        watchedFields.classList.remove('hidden');
+        document.getElementById('movieInputWatchedDate').value = 'Сегодня';
+      }
+
+      document.getElementById('movieModal').classList.remove('hidden');
+    }
+
+    function closeMovieModal() {
+      document.getElementById('movieModal').classList.add('hidden');
+      document.getElementById('movieForm').reset();
+      document.getElementById('aiAutofillQuery').value = '';
+    }
+
+    function handleMovieFormSubmit(e) {
+      e.preventDefault();
+      const target = document.getElementById('movieFormTarget').value;
+      const title = document.getElementById('movieInputTitle').value.trim();
+      const genre = document.getElementById('movieInputGenre').value.trim() || 'Фильм';
+      const duration = document.getElementById('movieInputDuration').value.trim() || '115 мин';
+      const year = parseInt(document.getElementById('movieInputYear').value) || 2024;
+      const addedBy = document.getElementById('movieInputAddedBy').value;
+      const poster = document.getElementById('movieInputPoster').value.trim() || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=80';
+      const ratingScore = document.getElementById('movieInputRatingScore').value.trim() || '7.5';
+
+      if (!title) return;
+
+      if (target === 'wishlist') {
+        const isSeries = duration.toLowerCase().includes('сезон') || duration.toLowerCase().includes('сери');
+        const durNumber = parseInt(duration) || 110;
+
+        appData.wishlist.unshift({
+          id: 'w_' + Date.now(),
+          title: title,
+          year: year,
+          genre: genre,
+          duration: duration,
+          isSeries: isSeries,
+          durationMins: durNumber,
+          poster: poster,
+          addedBy: addedBy,
+          ratingScore: ratingScore,
+          category: isSeries ? 'series' : 'movies',
+          likes: { him: false, her: false }
+        });
+        showToast(`«${title}» добавлен в вишлист!`);
+        sendTelegramNotification(`🍿 <b>${addedBy} добавил(а) новый тайтл:</b>\n«<b>${title}</b>» (${year}, ${genre}, ${duration})`);
+      } else {
+        const dateWatched = document.getElementById('movieInputWatchedDate').value || 'Сегодня';
+        const placeWatched = document.getElementById('movieInputWatchedPlace').value || 'Дома';
+        const ratingHim = parseFloat(document.getElementById('movieInputRatingHim').value) || null;
+        const ratingHer = parseFloat(document.getElementById('movieInputRatingHer').value) || null;
+        const tags = document.getElementById('movieInputTags').value.trim();
+        const note = document.getElementById('movieInputNote').value.trim();
+
+        appData.watched.unshift({
+          id: 'wat_' + Date.now(),
+          title: title,
+          dateWatched: dateWatched,
+          placeWatched: placeWatched,
+          ratingHim: ratingHim,
+          ratingHer: ratingHer,
+          tags: tags,
+          notes: note
+        });
+
+        appData.wishlist = appData.wishlist.filter(m => m.title.toLowerCase() !== title.toLowerCase());
+        showToast(`«${title}» сохранен в историю просмотров!`);
+        sendTelegramNotification(`✅ <b>Посмотрели фильм!</b>\n«<b>${title}</b>»\n👨 Он: ${ratingHim || '—'}/10 | 👩 Она: ${ratingHer || '—'}/10\n📍 ${placeWatched}`);
+      }
+
+      saveState();
+      renderAll();
+      closeMovieModal();
+    }
+
+    function openAddSoloModal() {
+      document.getElementById('soloModal').classList.remove('hidden');
+    }
+
+    function closeSoloModal() {
+      document.getElementById('soloModal').classList.add('hidden');
+      document.getElementById('soloForm').reset();
+    }
+
+    function handleSoloFormSubmit(e) {
+      e.preventDefault();
+      const title = document.getElementById('soloInputTitle').value.trim();
+      const whoWatched = document.getElementById('soloInputWho').value;
+      const verdict = document.getElementById('soloInputVerdict').value;
+      const comment = document.getElementById('soloInputComment').value.trim();
+
+      if (!title) return;
+
+      appData.solo.unshift({
+        id: 's_' + Date.now(),
+        title: title,
+        whoWatched: whoWatched,
+        verdict: verdict,
+        comment: comment,
+        addedToWishlist: false
+      });
+
+      saveState();
+      renderSolo();
+      closeSoloModal();
+      showToast('Рекомендация добавлена!');
+    }
+
+    function renderAll() {
+      renderWishlist();
+      renderWatched();
+      renderSolo();
+      renderNytList();
+      checkMatchesPool();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.Telegram?.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+      }
+
+      renderAll();
+      switchTab('wishlist');
+    });
+  </script>
+</body>
+</html>
